@@ -5,139 +5,80 @@
   </picture>
 </p>
 
-# Maeklog
+<p align="center">
+  <strong>Pick up your Codex work where you left off.</strong><br>
+  Decisions, progress and next actions beside your terminal.
+</p>
 
-**Keep the context of your Codex work organized, one Herdr tab at a time.**
+<p align="center">
+  <a href="#what-is-maeklog">What it is</a> ·
+  <a href="#see-it-in-action">See it in action</a> ·
+  <a href="#day-to-day-use">Everyday use</a> ·
+  <a href="docs/setup.md">Setup guide</a>
+</p>
 
-See what was decided, what was reported complete, where work stands, what is blocked, and who should act next—with source evidence. Spend less time rereading long conversations when switching between tabs.
+## What is Maeklog?
 
-Codex does the work; Maeklog organizes the decisions and reports left in the conversation. Completion entries preserve the type of report, and next steps retain their owner and conditions. Execution, approval, and verification follow your usual workflow.
+Maeklog is a terminal side panel for **Codex in Herdr**. It turns a long conversation into a readable record of decisions, reported completions, current progress, blockers and next actions—with source quotations and timestamps you can check.
 
-![Maeklog showing current progress and saved records for a fictional search-filter task](docs/assets/demo/panel.png)
+Each Herdr tab keeps its own records, organized by repository and branch. Start a new Codex session in the same tab and those records remain available for you to read.
 
-*The current terminal UI with fictional demo data, shown in Korean. The interface also supports English. [Capture provenance (Korean)](docs/assets/demo/README.md)*
+## The problem it solves
 
-## What you can see
+You switch to another task. Hours later, you return to a long Codex conversation: which approach did you choose, what did Codex say was finished, and what still needs your attention?
 
-- **Context per tab:** Keep records separate even when several tabs use the same repository and branch.
-- **Decisions and completion reports:** Preserve active decisions, implementation, verification, merge and deployment reports, and their change history.
-- **Current progress:** Read Codex's public commentary, plans and activity alongside recorded progress, blockers and next steps.
-- **Evidence and corrections:** Check source quotations and timestamps, edit incorrect records, exclude them, or undo a correction.
-- **Work references:** Review and correct the GitHub issue and PR links for the current conversation.
-- **Summary settings:** Choose the summary model, reasoning effort, and Auto, English or Korean language in the menu.
+Maeklog puts those answers beside the work, so you can regain context without rereading the whole conversation.
 
-## Before you start
+<picture>
+  <source media="(max-width: 640px)" srcset="docs/assets/demo/overview-mobile.svg">
+  <img src="docs/assets/demo/overview.svg" alt="Concept example: a long Codex conversation becomes a clear record of a decision, reported work, current progress and the next action, helping you pick up your work.">
+</picture>
 
-Maeklog is available as source in [reganpark/maeklog](https://github.com/reganpark/maeklog). It has **not been registered or listed in Herdr Marketplace**. The instructions below describe manual setup from this repository.
+## Who it is for
 
-Setup requires building Maeklog and a **Maeklog-compatible Codex 0.162.1 client**. The client patch supplies the tab identity and public progress that the panel needs.
+- **People juggling Codex tasks in several Herdr tabs**, including tasks in the same repository and branch.
+- **People returning to long-running work** who need a clear place to find the decisions and next actions.
+- **People who want to check what a summary is based on**, with evidence and corrections close at hand.
 
-| Requirement | Details |
-| --- | --- |
-| Operating system | Linux and macOS are declared targets. Native validation covers Linux x86_64; macOS has not been verified on real hardware. |
-| Herdr | 0.8.2 or later. Run setup commands in a regular shell inside Herdr. |
-| Codex | A signed-in official CLI with hooks enabled. The current integration patch targets 0.162.1. |
-| Build tools | Python 3.11+, Git, GitHub CLI (`gh`), Rust/rustup, `just`, `cargo-nextest`, Node.js/npm, and Bazel or Bazelisk providing a `bazel` command. Maeklog pins Rust 1.97.1. |
-| Terminal | UTF-8 display. Mouse and clipboard features depend on terminal support. |
+## See it in action
 
-**Usage and privacy:** Records are stored locally, but conversations selected for summarization and a limited index of existing records are sent to a model service through Codex. Summaries consume additional model usage, with no monetary budget cap. Hiding the panel keeps collection running; choose **Stop recording in this tab** in the menu to stop it.
+![Maeklog in English, showing public progress and saved decisions, reported completions and next actions for a fictional search-filter task.](docs/assets/demo/panel.png)
 
-## Manual setup from source
+*Actual Maeklog terminal UI, in English, with fictional demo data. The work and test counts are example reports. [How this demo was captured](docs/assets/demo/README.md).*
 
-The [step-by-step guide (Korean)](docs/getting-started.md) includes prerequisites, configuration and troubleshooting. The same setup flow is outlined below.
+In this example, the decision is to **preserve selected filters** when the search changes. Codex has **reported implementing the change and passing 12 tests**. A small-screen layout check is still in progress, and Codex's next action is to write the PR summary **after that check**.
 
-1. In a regular Herdr shell, clone and build the source, then link the local checkout and install its collection hooks.
+The panel separates **current public progress** from **saved records**. A response ending is not treated as proof that the task is complete. Important decisions and completion reports can be opened to inspect their evidence and correct mistakes.
 
-   ```sh
-   git clone https://github.com/reganpark/maeklog.git
-   cd maeklog
-   cargo build --locked --release
-   maeklog_root="$PWD"
-   herdr plugin link "$maeklog_root"
-   herdr plugin action invoke install-codex-hooks --plugin maeklog
-   ```
+## Day-to-day use
 
-   Local linking does not run build commands, so the build comes first. Keep this checkout available after setup: the updater uses its scripts and patches.
+1. **Open the panel in your project tab.** Work in Codex beside it. Records from other tabs stay separate.
+2. **Catch up before you continue.** Read the active decisions and next actions; press `h` to browse all saved records without a model call.
+3. **Check the details that matter.** Press `e` to inspect source evidence, correct or exclude a record, or undo a correction.
+4. **Hide it when you need the space.** Press `q` to hide the panel. Collection continues; use **Stop recording in this tab** in the menu when you want collection and summaries to stop.
 
-2. Open Codex and use `/hooks` to review and trust all four Maeklog handlers: **SessionStart, UserPromptSubmit, Stop and Interrupt**. If hooks are disabled, enable them and open a new Codex session:
+Click the panel to focus its keys. Open the menu with `m`, `F10` or a right-click. Today's completed turns are summarized automatically; `r` processes pending turns from today or retries failures, and `b` lets you select earlier or held dates. [Full controls and summary behavior](docs/setup.md#everyday-controls).
 
-   ```sh
-   codex features enable hooks
-   codex
-   ```
+## Setup and configuration
 
-   The installer does not grant hook trust on your behalf.
+Maeklog is currently available as a **manual source build**. Setup includes building the panel, trusting its four Codex hooks, and building a Maeklog-compatible **Codex 0.162.1** client. You will need Herdr 0.8.2 or later and the build tools listed in the guide. Linux x86_64 is validated; macOS is a declared target that has not yet been verified on real hardware.
 
-3. Exit the Codex input screen and return to the same **regular Herdr shell**. Check prerequisites, then build and activate the integrated client.
+**[Follow the English setup guide →](docs/setup.md)**
 
-   ```sh
-   python3 "$maeklog_root/scripts/update-codex-maeklog.py" --preflight
-   python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.162.1 --apply
-   ```
+Once installed, use the panel menu to choose the summary model and reasoning effort, set the language to **Auto, English or Korean**, and review or correct issue and PR links. Settings affect future summaries; changing them does not call a model or rewrite existing records. The default summary profile is `gpt-6-luna`, `medium` effort, Standard service. [Configuration and shortcuts](docs/setup.md#configuration).
 
-   `--preflight` checks local prerequisites and hook approvals without downloading, building or calling a model. `--apply` downloads and builds the source, runs validation, then connects the launchers. The build takes time and disk space.
+## Privacy and model usage
 
-4. In a new Herdr shell, check the launcher paths and versions.
+Records are stored locally. Summarization sends **selected conversation text and a limited index of existing records** to a model service through Codex, and consumes additional model usage. **There is no monetary budget cap.** Showing public progress or reading saved records does not itself run a summary.
 
-   ```sh
-   export PATH="$HOME/.local/bin:$PATH"
-   command -v codex
-   command -v codex-maeklog
-   codex --version
-   codex-maeklog --version
-   ```
-
-   The paths should be `~/.local/bin/codex` and `~/.local/bin/codex-maeklog`, with `codex-cli 0.162.1` reported by both. The official CLI reports the same version, so also check the launcher path and first conversation below. `codex-maeklog` is a package pointer for version diagnostics; use the installed `codex` launcher for interactive work.
-
-   The PATH change applies to the current shell. Add the same line to your shell's startup file to retain it, such as `~/.bashrc` for Bash or `~/.zshrc` for Zsh. Existing Codex processes keep their original code; finish active work, exit normally, then resume with the new launcher.
-
-5. In a regular Herdr shell in your project tab, open the panel.
-
-   ```sh
-   herdr plugin action invoke open --plugin maeklog
-   ```
-
-   Then start `codex` or `codex resume` from that shell and exchange a short, nonsensitive request. Public commentary appears when Codex provides it. After the response ends, check the saved-record update status; a turn may contain no confirmed decision or completion report. A response without commentary may show **No progress information**. Earlier conversations are not imported automatically. See [first-use checks (Korean)](docs/getting-started.md#5-첫-대화로-확인하기).
-
-## Everyday controls
-
-Click the panel to focus it before using its keys. Open the menu with `m`, `F10` or a right-click to find all actions.
-
-| Input | Action |
-| --- | --- |
-| `h` | Read all saved records without a model call. |
-| `e` | Inspect evidence, correct or exclude a record, or undo a correction. |
-| `r` | Summarize pending completed turns from today, or retry failed work. |
-| `b` | Select an earlier or held date; `Enter` requests its summary. |
-| `s` | Request a draft summary of the current public progress. |
-| `l` / `o` | Correct issue/PR links / open a linked reference. |
-| `q` | Hide the panel while collection continues. |
-| Arrow keys, `j`/`k`, mouse wheel | Scroll. |
-
-After [configuring the shortcuts (Korean)](docs/getting-started.md#6-열기숨기기-단축키-설정), use `prefix+m` to open the panel and `prefix+Shift+m` to hide it. The default prefix is `Ctrl+B`: press `Ctrl+B`, then `m`. Use your own prefix if you changed Herdr's configuration.
-
-Completed turns collected today are summarized automatically, newest batch first. Earlier dates, unknown timestamps and turns spanning midnight require selection with `b`. The same work receives at most three automatic attempts before its source is retained for an explicit retry. See [dates, retries and collection scope (Korean)](docs/usage.md#언제-자동으로-요약하나요).
-
-## Model usage and stored data
-
-The default summary profile is `gpt-6-luna`, reasoning effort `medium`, Standard service. Changing model or language settings does not run a summary or rewrite existing records. Summaries of completed turns and requests made with `r`, `b` or `s` can incur additional model usage.
-
-The actual record directory is the `state_dir` value in `hook-runtime.json` inside Maeklog's configuration directory. Herdr's default plugin state path is `~/.local/state/herdr/plugins/maeklog`; configuration defaults to `~/.config/herdr/plugins/config/maeklog`. XDG paths and explicit settings can change these locations. Directory and file permissions are `0700` and `0600`; storage is not encrypted. Pending source text, evidence quotations and diagnostic files can contain sensitive conversations. See [storage and deletion (Korean)](docs/usage.md#모델-사용량과-저장) and the [security policy](SECURITY.md).
-
-## Troubleshooting
-
-| Symptom | Check first |
-| --- | --- |
-| The panel opens but new conversation data is missing | Check that the new terminal uses the integrated `codex` launcher, review all four handlers in `/hooks`, and rerun `--preflight`. |
-| Today's records have not been reflected | Wait for the Codex response to finish, then press `r`. Use `b` for earlier or held turns. |
-| Summary processing failed or automatic retries stopped | Open summary and processing details with `h`. Check model access, network and settings. After fixing the cause, use `r` for today or reselect the earlier date with `b`. |
-| One conversation is open in two terminals and collection stops | New input is held when its submitting terminal is ambiguous. Continue from one terminal. |
-| Dragging does not copy to the clipboard | Check OSC 52 support or use Herdr's `prefix+[` copy mode. |
-
-Model interpretation can be wrong. Use `e` to check evidence and correct important records. The [full troubleshooting guide (Korean)](docs/getting-started.md#문제-해결) covers installation errors and updates.
+Storage is not encrypted. Pending conversation text, evidence and diagnostic files can contain sensitive information. Model summaries can also be wrong—check the evidence for important records. [What records can tell you](docs/setup.md#what-records-can-tell-you) · [Storage details](docs/setup.md#storage-and-privacy) · [Security policy](SECURITY.md).
 
 ## Documentation
 
-[Getting started (Korean)](docs/getting-started.md) · [User guide (Korean)](docs/usage.md) · [Codex integration and updates](integrations/codex/README.md) · [Security](SECURITY.md) · [Current UI contract](docs/ui-contract.md) · [Release validation status](docs/release-readiness.md) · [MIT license](LICENSE) · [Historical architecture notes](docs/architecture.md)
+- [English setup, controls and troubleshooting](docs/setup.md)
+- [Getting started (Korean)](docs/getting-started.md) · [User guide (Korean)](docs/usage.md)
+- [Codex integration and updates](integrations/codex/README.md)
+- [Current UI contract](docs/ui-contract.md) · [Release validation status](docs/release-readiness.md)
+- [MIT license](LICENSE) · [Historical architecture notes](docs/architecture.md)
 
-Earlier design notes, dated verification records and older captures describe their own historical scope. Use the getting-started and user guides for current behavior.
+Earlier design notes, dated verification records and older captures describe their own historical scope. Use the setup and user guides for current behavior.

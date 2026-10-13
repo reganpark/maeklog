@@ -30,7 +30,7 @@ const env = {
   MAEKLOG_GH_BIN: join(project, 'scripts/mock-language-picker-guard.mjs'),
   MAEKLOG_OPEN_BIN: join(project, 'scripts/mock-language-picker-guard.mjs'),
   MAEKLOG_LANGUAGE_TEST_CALLS: calls,
-  LC_ALL: 'ko_KR.UTF-8', TERM: 'xterm-256color', COLORTERM: 'truecolor', TZ: 'Asia/Seoul',
+  LC_ALL: 'en_US.UTF-8', LANG: 'en_US.UTF-8', TERM: 'xterm-256color', COLORTERM: 'truecolor', TZ: 'Asia/Seoul',
 };
 const put = (path, value) => writeFileSync(path, JSON.stringify(value));
 const json = path => JSON.parse(readFileSync(path, 'utf8'));
@@ -52,6 +52,8 @@ const run = async (args, input) => {
 };
 let guard, panel, spool;
 try {
+  // Set the isolated app preference explicitly; never change real user settings.
+  put(join(config, 'language-settings.json'), {language: 'en'});
   for (const args of [
     ['init', '-q', '-b', 'search-filters'],
     ['-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--allow-empty', '-m', 'Synthetic README fixture'],
@@ -62,7 +64,7 @@ try {
   put(env.PM_CLIENT_TOPOLOGY, {socket: env.HERDR_SOCKET_PATH, panes: [{pane_id: 'demo:p1', workspace_id: 'demo', tab_id: 'demo:t1', terminal_id: 'demo-terminal', pid: 101, agent: 'codex', cwd: repo}]});
   guard = spawn('python3', ['-c', 'import fcntl,sys; f=open(sys.argv[1],"a+"); fcntl.flock(f,fcntl.LOCK_EX); print("ready",flush=True); sys.stdin.read()', join(state, 'worker.lock')], {env, stdio: ['pipe', 'pipe', 'inherit']});
   await new Promise((done, reject) => {guard.stdout.once('data', done); guard.once('error', reject);});
-  const request = '검색 조건을 바꿀 때 선택한 필터를 유지해 주세요.';
+  const request = 'Keep selected filters when the search changes.';
   // Initialize a local synthetic event without querying any terminal; routing is tested elsewhere.
   delete env.HERDR_PANE_ID;
   const hook = await run(['hook'], {hook_event_name: 'UserPromptSubmit', session_id: 'thread-demo', turn_id: 'turn-demo', cwd: repo, prompt: request});
@@ -77,11 +79,11 @@ try {
   const now = Math.floor(Date.now() / 1000), midnight = Math.floor((now + 32400) / 86400) * 86400 - 32400;
   const at = age => Math.max(midnight, now - age);
   const texts = {
-    decision: '검색 조건을 바꿔도 선택한 필터를 유지하기로 했습니다.',
-    completion: '필터 유지 동작을 구현하고 관련 테스트 12개가 통과했다고 보고했습니다.',
-    progress: '작은 화면에서 필터 목록의 줄바꿈을 확인하고 있습니다.',
-    action: '화면 확인이 끝나면 변경 내용을 PR에 정리합니다.',
-    commentary: '필터 유지 동작을 반영했습니다. 지금은 작은 화면에서도 선택 상태와 결과 개수를 함께 읽을 수 있는지 확인하고 있습니다.',
+    decision: 'Keep selected filters when the search changes.',
+    completion: 'Implemented filter retention; 12 tests passed.',
+    progress: 'Checking filter layout on a narrow screen.',
+    action: 'Write the PR summary after the visual check.',
+    commentary: 'Filter retention is implemented. I am checking the narrow-screen layout before writing the PR summary.',
   };
   const sources = {};
   const source = (seq, kind, age, turn) => sources[seq] = {...seed, uid: 'readme-demo-' + seq, order: seq, kind, at_unix_utc: at(age), turn};
@@ -102,7 +104,7 @@ try {
   put(join(branchDirectory, 'journal.json'), {
     revision: 1, through_order: 3, through_unix_utc: at(300), updated_at_unix_utc: at(300),
     records: {D1: record('D1', 'decision', 'decision', 'confirmed', texts.decision, 1), C1: record('C1', 'completion', 'implementation', 'reported', texts.completion, 2)},
-    states: {P1: stateRow('P1', 'progress', texts.progress, 'Codex', null), A1: stateRow('A1', 'action', texts.action, 'Codex', '화면 확인 후')}, gaps: [],
+    states: {P1: stateRow('P1', 'progress', texts.progress, 'Codex', null), A1: stateRow('A1', 'action', texts.action, 'Codex', 'after the visual check')}, gaps: [],
   });
   put(join(space, 'event-sources.json'), sources);
   writeFileSync(join(space, 'inbox.jsonl'), JSON.stringify({seq: 4, kind: 'user_prompt', session_id: 'thread-demo', turn_id: 'turn-demo', model: null, content: request, truncated: false, recorded_at_unix: at(60), cwd: repo}) + '\n');
@@ -118,7 +120,7 @@ try {
   Object.assign(live, {source_prompt_seq: 4, revision: 2, updated_at: now, ended: false, status: 'inProgress', request, commentary: [{id: 'demo-commentary', text: texts.commentary, at_unix: now}], plan: [], activities: [], truncated: false});
   put(join(space, 'live-turn.json'), live);
   let raw = '', frame = '';
-  const columns = 80, rows = 30;
+  const columns = 80, rows = 28;
   panel = spawn('python3', [join(project, 'scripts/pty-ui-readability.py'), binary, String(columns), String(rows)], {env, stdio: ['pipe', 'pipe', 'pipe']});
   panel.stdout.setEncoding('utf8'); panel.stderr.setEncoding('utf8');
   panel.stdout.on('data', data => {
@@ -129,11 +131,14 @@ try {
   });
   panel.stderr.on('data', data => raw += data); panel.stdin.on('error', () => {});
   const deadline = Date.now() + 10000;
-  while ((!frame || !plain(frame).includes('다음 행동')) && Date.now() < deadline) await pause(25);
+  while ((!frame || !plain(frame).includes('Next actions')) && Date.now() < deadline) await pause(25);
   assert(frame, 'TUI did not render');
   const visible = plain(frame).replace(/\s/g, '');
-  for (const token of ['유효 결정 1건', '오늘 완료 1건', '기록된 진행 1건', '검색 조건', '필터 유지 동작', 'PR에 정리']) assert(visible.includes(token.replace(/\s/g, '')), 'Missing demo content: ' + token);
-  assert(!visible.includes('요약 처리 실패') && !visible.includes('자동 재시도 중지'), 'Demo unexpectedly showed a processing failure');
+  for (const token of ['Current conversation task', 'Active decisions: 1', 'Today’s completion reports: 1', 'Recorded progress: 1', 'Next actions: 1', '[Reported]', ...[texts.decision, texts.completion, texts.progress, texts.action], 'Codex', 'after the visual check']) assert(visible.includes(token.replace(/\s/g, '')), 'Missing demo content: ' + token);
+  assert(!visible.includes('Summary processing failed') && !visible.includes('Automatic retry stopped'), 'Demo unexpectedly showed a processing failure');
+  assert(!/[\uac00-\ud7af]/u.test(visible), 'Demo interface or fixture contains Korean');
+  for (const privatePath of [project, evidence, root, fixtureHome]) assert(!plain(frame).includes(privatePath), 'Capture exposes a private path');
+  assert.equal(json(join(config, 'language-settings.json')).language, 'en', 'Capture changed its isolated preference');
   assert(!existsSync(calls), 'Capture invoked a provider or opener');
   writeFileSync(join(output, 'panel.ansi'), frame);
   panel.stdin.write('q');
@@ -143,7 +148,7 @@ try {
   const render = spawnSync('python3', [join(project, 'scripts/render-terminal-capture.py'), '--columns', String(columns), join(output, 'panel.ansi')], {env, encoding: 'utf8'});
   assert.equal(render.status, 0, render.stderr);
   const version = spawnSync(binary, ['--version'], {env, encoding: 'utf8'}).stdout.trim();
-  const result = {passed: true, synthetic: true, version, columns, rows, binary_sha256: digest(binary), script_sha256: digest(new URL(import.meta.url)), png_sha256: digest(join(output, 'panel.png')), external_calls: 0, fixture_root: root, source: 'Captured current TUI; invented records and public commentary; no display text rewritten.'};
+  const result = {passed: true, synthetic: true, version, columns, rows, binary_sha256: digest(binary), script_sha256: digest(new URL(import.meta.url)), png_sha256: digest(join(output, 'panel.png')), language: 'en', external_calls: 0, fixture_root: root, source: 'Captured current TUI; invented records and public commentary; no display text rewritten.'};
   writeFileSync(join(evidence, 'result.json'), JSON.stringify(result, null, 2) + '\n');
   console.log(JSON.stringify({passed: true, version, image: join(output, 'panel.png'), external_calls: 0}));
 } finally {
