@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/maeklog-02-horizontal-white.svg">
+  <img src="docs/assets/brand/maeklog-02-horizontal-black.svg" width="420" alt="Maeklog">
+</picture>
+
 # Maeklog
 
 **Keep the context of your Codex work organized, one Herdr tab at a time.**
