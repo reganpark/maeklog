@@ -1,3 +1,5 @@
+> **Status: Rejected / archived concept.** These assets are not an approved Maeklog logo.
+
 # Maeklog 로고
 
 Maeklog의 일곱 알파벳 `m a e k l o g`를 조합해 두 음절 **맥락**의 획을 만든 로고입니다. 가까이에서는 알파벳을, 전체에서는 한글 형태를 볼 수 있도록 설계했습니다.

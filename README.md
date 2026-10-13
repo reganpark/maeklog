@@ -1,68 +1,76 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/maeklog-logo-dark.svg">
-    <img src="docs/assets/brand/maeklog-logo.svg" width="360" alt="Maeklog 알파벳으로 맥락의 실루엣을 만든 로고">
-  </picture>
-</p>
+# Maeklog
 
-# Maeklog · 맥로그
+**Keep the context of your Codex work organized, one Herdr tab at a time.**
 
-**Herdr에서 Codex와 작업한 대화를 탭별로 정리합니다.**
+See what was decided, what was reported complete, where work stands, what is blocked, and who should act next—with source evidence. Spend less time rereading long conversations when switching between tabs.
 
-무엇을 결정했는지, 어떤 일이 완료됐다고 보고됐는지, 지금 어디까지 진행했고 무엇이 막혔는지, 다음에 누가 무엇을 해야 하는지 근거와 함께 확인하세요. 여러 탭을 오갈 때 긴 대화를 다시 읽는 수고를 줄여 줍니다.
+Codex does the work; Maeklog organizes the decisions and reports left in the conversation. Completion entries preserve the type of report, and next steps retain their owner and conditions. Execution, approval, and verification follow your usual workflow.
 
-Codex가 작업하고 Maeklog는 대화에서 남긴 결정과 보고를 정리합니다. 완료 기록에는 보고 유형을 표시하고, 다음 행동에는 담당과 조건을 남깁니다. 실제 실행·승인·검증은 작업 흐름에서 진행합니다.
+![Maeklog showing current progress and saved records for a fictional search-filter task](docs/assets/demo/panel.png)
 
-![검색 필터 작업의 현재 진행과 저장 기록을 보여주는 Maeklog 패널](docs/assets/demo/panel.png)
+*The current terminal UI with fictional demo data, shown in Korean. The interface also supports English. [Capture provenance (Korean)](docs/assets/demo/README.md)*
 
-*예시 데이터로 현재 TUI를 실행한 화면입니다. 실제 사용자 대화가 아닙니다. [캡처 출처](docs/assets/demo/README.md)*
+## What you can see
 
-## 무엇을 볼 수 있나요?
+- **Context per tab:** Keep records separate even when several tabs use the same repository and branch.
+- **Decisions and completion reports:** Preserve active decisions, implementation, verification, merge and deployment reports, and their change history.
+- **Current progress:** Read Codex's public commentary, plans and activity alongside recorded progress, blockers and next steps.
+- **Evidence and corrections:** Check source quotations and timestamps, edit incorrect records, exclude them, or undo a correction.
+- **Work references:** Review and correct the GitHub issue and PR links for the current conversation.
+- **Summary settings:** Choose the summary model, reasoning effort, and Auto, English or Korean language in the menu.
 
-- **탭별 맥락:** 같은 저장소와 브랜치를 여러 탭에서 작업해도 기록을 구분합니다.
-- **결정과 완료 보고:** 유효한 결정, 구현·검증·병합·배포 보고와 변경 이력을 남깁니다.
-- **현재 진행:** Codex의 공개 설명·계획·활동과 기록된 진행·막힘·다음 행동을 읽습니다.
-- **근거와 정정:** 원문 인용과 시각을 확인하고 잘못된 기록을 수정·제외하거나 되돌립니다.
-- **작업 연결:** 현재 대화의 GitHub 이슈·PR을 확인하고 연결을 정정합니다.
-- **모델과 언어:** 요약 모델·추론 강도, Auto·English·한국어를 메뉴에서 선택합니다.
+## Before you start
 
-## 설치 전에
+Maeklog is available as source in [reganpark/maeklog](https://github.com/reganpark/maeklog). It has **not been registered or listed in Herdr Marketplace**. The instructions below describe manual setup from this repository.
 
-현재 배포는 **소스 빌드 방식**입니다. 패널뿐 아니라 탭 귀속과 공개 진행을 연결하는 **Maeklog용 Codex 0.162.1 빌드**가 필요합니다. Herdr 플러그인만 설치하면 연결이 완성되지는 않습니다.
+Setup requires building Maeklog and a **Maeklog-compatible Codex 0.162.1 client**. The client patch supplies the tab identity and public progress that the panel needs.
 
-| 준비물 | 기준 |
+| Requirement | Details |
 | --- | --- |
-| 운영체제 | Linux, macOS. macOS는 지원 대상으로 선언돼 있으며 실기 검증은 아직 진행하지 않았습니다. |
-| Herdr | 0.8.2 이상. 설치·연결은 Herdr 안의 터미널에서 진행합니다. |
-| Codex | 로그인한 공식 CLI와 hooks 기능. 현재 통합 패치 기준은 0.162.1입니다. |
-| 빌드 도구 | Python 3.11+, Git, GitHub CLI(`gh`), Rust/rustup, `just`, `cargo-nextest`, Node.js/npm, Bazel 또는 Bazelisk의 `bazel` 명령. Maeklog의 Rust toolchain은 1.97.1로 고정돼 있습니다. |
-| 터미널 | UTF-8 표시. 마우스·클립보드 기능은 터미널의 지원에 따라 달라집니다. |
+| Operating system | Linux and macOS are declared targets. Native validation covers Linux x86_64; macOS has not been verified on real hardware. |
+| Herdr | 0.8.2 or later. Run setup commands in a regular shell inside Herdr. |
+| Codex | A signed-in official CLI with hooks enabled. The current integration patch targets 0.162.1. |
+| Build tools | Python 3.11+, Git, GitHub CLI (`gh`), Rust/rustup, `just`, `cargo-nextest`, Node.js/npm, and Bazel or Bazelisk providing a `bazel` command. Maeklog pins Rust 1.97.1. |
+| Terminal | UTF-8 display. Mouse and clipboard features depend on terminal support. |
 
-**첫 사용 전에 알아두세요:** 수집한 기록은 로컬에 저장하지만, 요약 대상 대화와 일부 기존 기록은 Codex를 통해 모델 서비스에 전송됩니다. 요약은 별도의 모델 사용량을 발생시키며 금액 기준 예산 상한은 없습니다. 패널을 숨겨도 수집은 계속되므로 중지할 때는 메뉴의 **이 탭 수집 끄기**를 사용하세요.
+**Usage and privacy:** Records are stored locally, but conversations selected for summarization and a limited index of existing records are sent to a model service through Codex. Summaries consume additional model usage, with no monetary budget cap. Hiding the panel keeps collection running; choose **Stop recording in this tab** in the menu to stop it.
 
-## 설치
+## Manual setup from source
 
-처음 설치한다면 [단계별 설치 안내](docs/getting-started.md)를 따라가세요. 아래는 같은 순서의 빠른 안내입니다.
+The [step-by-step guide (Korean)](docs/getting-started.md) includes prerequisites, configuration and troubleshooting. The same setup flow is outlined below.
 
-1. Herdr 안의 터미널에서 플러그인을 설치하고 훅을 등록합니다.
+1. In a regular Herdr shell, clone and build the source, then link the local checkout and install its collection hooks.
 
    ```sh
-   herdr plugin install reganpark/maeklog
+   git clone https://github.com/reganpark/maeklog.git
+   cd maeklog
+   cargo build --locked --release
+   maeklog_root="$PWD"
+   herdr plugin link "$maeklog_root"
    herdr plugin action invoke install-codex-hooks --plugin maeklog
    ```
 
-2. Codex를 열어 `/hooks`에서 Maeklog의 **SessionStart, UserPromptSubmit, Stop, Interrupt** 네 훅을 확인하고 각각 신뢰합니다. hooks 기능이 꺼져 있으면 활성화한 뒤 새 Codex 세션에서 다시 확인합니다.
+   Local linking does not run build commands, so the build comes first. Keep this checkout available after setup: the updater uses its scripts and patches.
 
-3. Codex 입력창을 닫거나 별도 **Herdr 일반 셸**을 엽니다. [설치 안내에서 플러그인 경로를 `maeklog_root`에 지정](docs/getting-started.md#1-herdr-안에서-플러그인-설치하기)한 뒤 통합 설치를 검사합니다.
+2. Open Codex and use `/hooks` to review and trust all four Maeklog handlers: **SessionStart, UserPromptSubmit, Stop and Interrupt**. If hooks are disabled, enable them and open a new Codex session:
+
+   ```sh
+   codex features enable hooks
+   codex
+   ```
+
+   The installer does not grant hook trust on your behalf.
+
+3. Exit the Codex input screen and return to the same **regular Herdr shell**. Check prerequisites, then build and activate the integrated client.
 
    ```sh
    python3 "$maeklog_root/scripts/update-codex-maeklog.py" --preflight
    python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.162.1 --apply
    ```
 
-   `--preflight`는 다운로드·빌드·모델 호출 없이 준비 상태를 확인합니다. `--apply` 명령은 소스를 내려받아 빌드하고 검증을 통과한 뒤 런처를 연결합니다. 빌드 중에는 시간이 걸리고 디스크 공간을 사용합니다.
+   `--preflight` checks local prerequisites and hook approvals without downloading, building or calling a model. `--apply` downloads and builds the source, runs validation, then connects the launchers. The build takes time and disk space.
 
-4. 새 Herdr 터미널에서 런처와 버전을 확인합니다.
+4. In a new Herdr shell, check the launcher paths and versions.
 
    ```sh
    export PATH="$HOME/.local/bin:$PATH"
@@ -72,55 +80,57 @@ Codex가 작업하고 Maeklog는 대화에서 남긴 결정과 보고를 정리�
    codex-maeklog --version
    ```
 
-   경로는 각각 `~/.local/bin/codex`, `~/.local/bin/codex-maeklog`이고 버전은 `codex-cli 0.162.1`이어야 합니다. 공식 CLI도 같은 버전을 표시하므로 경로와 첫 대화 수집까지 확인하세요. PATH를 계속 사용하려면 [자신의 셸 설정 파일에 추가](docs/getting-started.md#4-maeklog용-codex-빌드와-연결하기)합니다. 이미 열린 Codex는 작업 후 정상 종료하고 재개해야 새 빌드를 사용합니다.
+   The paths should be `~/.local/bin/codex` and `~/.local/bin/codex-maeklog`, with `codex-cli 0.162.1` reported by both. The official CLI reports the same version, so also check the launcher path and first conversation below. `codex-maeklog` is a package pointer for version diagnostics; use the installed `codex` launcher for interactive work.
 
-5. 패널을 엽니다.
+   The PATH change applies to the current shell. Add the same line to your shell's startup file to retain it, such as `~/.bashrc` for Bash or `~/.zshrc` for Zsh. Existing Codex processes keep their original code; finish active work, exit normally, then resume with the new launcher.
+
+5. In a regular Herdr shell in your project tab, open the panel.
 
    ```sh
    herdr plugin action invoke open --plugin maeklog
    ```
 
-   새로 주고받은 대화의 공개 진행이 보이고, 응답이 끝난 뒤 기록이 반영되면 연결된 상태입니다. 이전 대화는 자동으로 가져오지 않습니다. [최초 확인과 단축키 설정](docs/getting-started.md#5-첫-대화로-확인하기)을 참고하세요.
+   Then start `codex` or `codex resume` from that shell and exchange a short, nonsensitive request. Public commentary appears when Codex provides it. After the response ends, check the saved-record update status; a turn may contain no confirmed decision or completion report. A response without commentary may show **No progress information**. Earlier conversations are not imported automatically. See [first-use checks (Korean)](docs/getting-started.md#5-첫-대화로-확인하기).
 
-## 자주 쓰는 조작
+## Everyday controls
 
-패널을 클릭해 포커스를 준 뒤 키를 누릅니다. `m`·`F10`·우클릭으로 모든 기능을 찾을 수 있습니다.
+Click the panel to focus it before using its keys. Open the menu with `m`, `F10` or a right-click to find all actions.
 
-| 입력 | 동작 |
+| Input | Action |
 | --- | --- |
-| `h` | 저장 기록 전체 읽기. 모델 호출 없이 열람합니다. |
-| `e` | 근거 확인·기록 정정·제외·되돌리기 |
-| `r` | 오늘의 미반영 완료 대화 요약·실패 재시도 |
-| `b` | 이전·보류 날짜 선택. `Enter`로 선택한 대화 요약 요청 |
-| `s` | 현재 공개 진행의 잠정 요약 요청 |
-| `l` / `o` | 이슈·PR 연결 정정 / 연결한 링크 열기 |
-| `q` | 패널 숨기기. 수집은 계속됩니다. |
-| 방향키·`j`/`k`·휠 | 스크롤 |
+| `h` | Read all saved records without a model call. |
+| `e` | Inspect evidence, correct or exclude a record, or undo a correction. |
+| `r` | Summarize pending completed turns from today, or retry failed work. |
+| `b` | Select an earlier or held date; `Enter` requests its summary. |
+| `s` | Request a draft summary of the current public progress. |
+| `l` / `o` | Correct issue/PR links / open a linked reference. |
+| `q` | Hide the panel while collection continues. |
+| Arrow keys, `j`/`k`, mouse wheel | Scroll. |
 
-[키를 등록하면](docs/getting-started.md#6-열기숨기기-단축키-설정) `prefix+m`으로 열고 `prefix+Shift+m`으로 숨길 수 있습니다. 기본 prefix는 `Ctrl+B`이며, `Ctrl+B`를 누른 뒤 `m`을 차례로 누른다는 뜻입니다. Herdr에서 prefix를 바꿨다면 자신의 설정을 사용하세요.
+After [configuring the shortcuts (Korean)](docs/getting-started.md#6-열기숨기기-단축키-설정), use `prefix+m` to open the panel and `prefix+Shift+m` to hide it. The default prefix is `Ctrl+B`: press `Ctrl+B`, then `m`. Use your own prefix if you changed Herdr's configuration.
 
-오늘 수집된 완료 대화는 최신 묶음부터 자동으로 요약합니다. 이전 날짜·시각 미확인·자정을 걸친 대화는 `b`에서 선택해야 합니다. 같은 작업은 최대 3회 자동 재시도한 뒤 원문을 보존하고 사용자 요청을 기다립니다. [날짜·재시도·수집 범위](docs/usage.md#언제-자동으로-요약하나요)를 읽어 보세요.
+Completed turns collected today are summarized automatically, newest batch first. Earlier dates, unknown timestamps and turns spanning midnight require selection with `b`. The same work receives at most three automatic attempts before its source is retained for an explicit retry. See [dates, retries and collection scope (Korean)](docs/usage.md#언제-자동으로-요약하나요).
 
-## 비용과 개인정보
+## Model usage and stored data
 
-기본 요약 설정은 `gpt-6-luna` · 추론 강도 `medium` · Standard입니다. 모델·언어 설정을 바꾸는 것만으로 요약을 실행하거나 과거 기록을 다시 쓰지는 않습니다. 완료 대화 요약과 `r`·`b`·`s`의 요약 요청에는 추가 모델 사용량이 발생할 수 있습니다.
+The default summary profile is `gpt-6-luna`, reasoning effort `medium`, Standard service. Changing model or language settings does not run a summary or rewrite existing records. Summaries of completed turns and requests made with `r`, `b` or `s` can incur additional model usage.
 
-실제 기록 위치는 Maeklog 설정 폴더의 `hook-runtime.json`에 있는 `state_dir`에서 확인합니다. Herdr의 기본 플러그인 경로는 `~/.local/state/herdr/plugins/maeklog`, 설정은 `~/.config/herdr/plugins/config/maeklog`이며 XDG·명시적 설정에 따라 달라집니다. 디렉터리·파일 권한은 각각 `0700`·`0600`이며 암호화 저장소는 아닙니다. 원문 대기열·근거 인용·진단 파일에 민감한 대화가 남을 수 있습니다. [저장과 삭제](docs/usage.md#모델-사용량과-저장), [보안 정책](SECURITY.md)을 확인하세요.
+The actual record directory is the `state_dir` value in `hook-runtime.json` inside Maeklog's configuration directory. Herdr's default plugin state path is `~/.local/state/herdr/plugins/maeklog`; configuration defaults to `~/.config/herdr/plugins/config/maeklog`. XDG paths and explicit settings can change these locations. Directory and file permissions are `0700` and `0600`; storage is not encrypted. Pending source text, evidence quotations and diagnostic files can contain sensitive conversations. See [storage and deletion (Korean)](docs/usage.md#모델-사용량과-저장) and the [security policy](SECURITY.md).
 
-## 잘 안 될 때
+## Troubleshooting
 
-| 증상 | 먼저 확인할 것 |
+| Symptom | Check first |
 | --- | --- |
-| 패널은 열리는데 새 대화가 안 보임 | 새 터미널의 `codex`가 통합 빌드인지, `/hooks`의 네 훅이 신뢰·활성화돼 있는지 확인하고 `--preflight`를 다시 실행합니다. |
-| 오늘 기록이 아직 반영되지 않음 | Codex 응답이 끝났는지 확인하고 `r`을 누릅니다. 이전·보류 대화는 `b`에서 선택합니다. |
-| 요약 실패·자동 재시도 중지 | `h`의 요약·처리 상세를 읽고 모델 권한·네트워크·설정을 확인합니다. 원인을 고친 뒤 오늘은 `r`, 선택한 과거 날짜는 `b`로 재요청합니다. |
-| 같은 대화를 두 터미널에서 열었는데 수집 안 됨 | 어느 터미널이 새 요청의 주체인지 모호하면 수집을 보류합니다. 한 터미널에서 진행하세요. |
-| 드래그해도 클립보드에 복사 안 됨 | 터미널의 OSC 52 지원을 확인하거나 Herdr의 `prefix+[` 복사 모드를 사용합니다. |
+| The panel opens but new conversation data is missing | Check that the new terminal uses the integrated `codex` launcher, review all four handlers in `/hooks`, and rerun `--preflight`. |
+| Today's records have not been reflected | Wait for the Codex response to finish, then press `r`. Use `b` for earlier or held turns. |
+| Summary processing failed or automatic retries stopped | Open summary and processing details with `h`. Check model access, network and settings. After fixing the cause, use `r` for today or reselect the earlier date with `b`. |
+| One conversation is open in two terminals and collection stops | New input is held when its submitting terminal is ambiguous. Continue from one terminal. |
+| Dragging does not copy to the clipboard | Check OSC 52 support or use Herdr's `prefix+[` copy mode. |
 
-요약의 의미 판단은 모델에 의존합니다. 잘못된 항목은 `e`로 근거를 확인해 정정하세요. [전체 문제 해결](docs/getting-started.md#문제-해결)에 설치 오류와 업데이트 방법이 있습니다.
+Model interpretation can be wrong. Use `e` to check evidence and correct important records. The [full troubleshooting guide (Korean)](docs/getting-started.md#문제-해결) covers installation errors and updates.
 
-## 자세히 보기
+## Documentation
 
-[설치·최초 확인](docs/getting-started.md) · [사용 안내](docs/usage.md) · [Codex 통합·업데이트](integrations/codex/README.md) · [보안](SECURITY.md) · [이전 아키텍처 참고](docs/architecture.md) · [현재 화면 계약](docs/ui-contract.md) · [MIT 라이선스](LICENSE) · [배포 준비 상태](docs/release-readiness.md)
+[Getting started (Korean)](docs/getting-started.md) · [User guide (Korean)](docs/usage.md) · [Codex integration and updates](integrations/codex/README.md) · [Security](SECURITY.md) · [Current UI contract](docs/ui-contract.md) · [Release validation status](docs/release-readiness.md) · [MIT license](LICENSE) · [Historical architecture notes](docs/architecture.md)
 
-이전 설계·날짜별 검증 문서와 이전 캡처는 각 시점의 역사적 참고 자료입니다. 현재 사용법은 위의 설치·사용 안내를 기준으로 읽으세요.
+Earlier design notes, dated verification records and older captures describe their own historical scope. Use the getting-started and user guides for current behavior.
