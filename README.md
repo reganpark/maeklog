@@ -1,7 +1,9 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/maeklog-02-horizontal-white.svg">
-  <img src="docs/assets/brand/maeklog-02-horizontal-black.svg" width="420" alt="Maeklog">
-</picture>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/maeklog-02-horizontal-white.svg">
+    <img src="docs/assets/brand/maeklog-02-horizontal-black.svg" width="420" alt="Maeklog">
+  </picture>
+</p>
 
 # Maeklog
 
