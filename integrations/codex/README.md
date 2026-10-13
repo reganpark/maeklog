@@ -2,7 +2,7 @@
 
 Maeklog uses a local Codex TUI patch to identify the terminal/tab that owns a conversation and to display public progress. The current patch is based on `openai/codex` tag `rust-v0.162.1`, commit `092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`.
 
-Start with the [installation guide](../../docs/getting-started.md) for plugin installation, the four collection hooks, manual `/hooks` review and trust, preflight, the checked Codex build, and a first conversation. A new installation uses Maeklog's own namespace. It does not discover or import another plugin's configuration or records.
+Start with the [English installation guide](../../docs/setup.md) for plugin installation, the four collection hooks, manual `/hooks` review and trust, preflight, the checked Codex build, and a first conversation. A new installation uses Maeklog's own namespace. It does not discover or import another plugin's configuration or records.
 
 ## What the patch does
 
@@ -35,7 +35,7 @@ python3 "$maeklog_root/scripts/update-codex-maeklog.py" --preflight
 python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.162.1 --apply
 ```
 
-`--preflight` checks required tools, the Herdr caller, installed Maeklog runtime/helper, hooks feature state, all four handler definitions, and their current manual enabled/trusted state. It performs no downloads, builds or model calls. Python 3.11+, Git, `gh`, Rust/rustup, `just`, `cargo-nextest`, Node/npm, Herdr, and a usable `bazel` command are required.
+`--preflight` checks required tools, the Herdr caller, installed Maeklog runtime/helper, hooks feature state, all four handler definitions, and their current manual enabled/trusted state. It performs no downloads, builds or model calls. Python 3.11+, Git, `gh`, Rust/rustup, `just`, `cargo-nextest`, Node/npm, Herdr, and a usable `bazel` command are required. The Codex 0.162.1 source build requires Bazel 9.2.0; use that version directly or let Bazelisk select it from the source's `.bazelversion`.
 
 Without `--apply`, a version request still downloads, builds and runs validation, then reports an installation plan. `--check` reports versions only and is not a trust check.
 

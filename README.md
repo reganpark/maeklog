@@ -52,16 +52,34 @@ The panel separates **current public progress** from **saved records**. A respon
 
 ## Day-to-day use
 
-1. **Open the panel in your project tab.** Work in Codex beside it. Records from other tabs stay separate.
-2. **Catch up before you continue.** Read the active decisions and next actions; press `h` to browse all saved records without a model call.
-3. **Check the details that matter.** Press `e` to inspect source evidence, correct or exclude a record, or undo a correction.
-4. **Hide it when you need the space.** Press `q` to hide the panel. Collection continues; use **Stop recording in this tab** in the menu when you want collection and summaries to stop.
+After [setup](docs/setup.md), open Maeklog from a **regular Herdr shell** in your project tab:
 
-Click the panel to focus its keys. Open the menu with `m`, `F10` or a right-click. Today's completed turns are summarized automatically; `r` processes pending turns from today or retries failures, and `b` lets you select earlier or held dates. [Full controls and summary behavior](docs/setup.md#everyday-controls).
+```sh
+herdr plugin action invoke open --plugin maeklog
+```
+
+**Click the Maeklog panel to focus it**, then use its keys. Open the menu with **`m`, `F10` or a right-click** to find all actions.
+
+| Key | What it does |
+| --- | --- |
+| `m` / `F10` / right-click | Open the menu, including model and language settings. |
+| `h` | Read all saved records without a model call. |
+| `e` | Inspect source evidence, correct or exclude a record, or undo a correction. |
+| `r` | Summarize today's pending completed turns or retry failures. |
+| `b` | Choose an earlier or held date; `Enter` requests its summary. |
+| `s` | Request a draft summary of the current public progress. |
+| `l` / `o` | Correct issue and PR links / open a linked reference. |
+| `v` | Refresh issue and PR information. |
+| Arrow keys / `j` / `k` / mouse wheel | Scroll the panel. |
+| `q` | Hide the panel while collection continues. |
+
+Today's completed turns are summarized automatically. `r`, `b` and `s` can request additional model work. To stop collection and summaries, choose **Stop recording in this tab** in the menu. [Full controls and summary behavior](docs/setup.md#everyday-controls).
+
+**Optional Herdr shortcuts:** after [configuring the keybindings](docs/setup.md#optional-open-and-hide-shortcuts), `prefix+m` opens the panel and `prefix+Shift+m` hides it. With Herdr's default prefix, press `Ctrl+B`, then `m` to open, or `Ctrl+B`, then `Shift+M` to hide. These shortcuts need that configuration first.
 
 ## Setup and configuration
 
-Maeklog is currently available as a **manual source build**. Setup includes building the panel, trusting its four Codex hooks, and building a Maeklog-compatible **Codex 0.162.1** client. You will need Herdr 0.8.2 or later and the build tools listed in the guide. Linux x86_64 is validated; macOS is a declared target that has not yet been verified on real hardware.
+Maeklog is currently available as a **manual source build**. Setup includes building the panel, trusting its four Codex hooks, and building a Maeklog-compatible **Codex 0.162.1** client. You will need Herdr 0.8.2 or later and the build tools listed in the guide. Linux x86_64 is validated; macOS is experimental and has not yet been verified on real hardware.
 
 **[Follow the English setup guide →](docs/setup.md)**
 
@@ -76,6 +94,7 @@ Storage is not encrypted. Pending conversation text, evidence and diagnostic fil
 ## Documentation
 
 - [English setup, controls and troubleshooting](docs/setup.md)
+- [v0.14.0 public preview release notes](docs/releases/v0.14.0.md)
 - [Getting started (Korean)](docs/getting-started.md) · [User guide (Korean)](docs/usage.md)
 - [Codex integration and updates](integrations/codex/README.md)
 - [Current UI contract](docs/ui-contract.md) · [Release validation status](docs/release-readiness.md)

@@ -6,9 +6,9 @@ Maeklog는 Herdr 안에서 Codex 대화를 탭별로 정리하는 플러그인�
 
 ## 준비물과 사용량
 
-- Linux 또는 macOS, Herdr 0.8.2 이상. macOS는 지원 대상으로 선언돼 있으나 실기 검증은 아직 진행하지 않았습니다.
+- Linux x86_64, Herdr 0.8.2 이상. macOS는 실험적 지원 대상으로, 실기 검증은 아직 진행하지 않았습니다.
 - 로그인한 공식 Codex CLI. 통합 패치의 기준 버전은 0.162.1입니다.
-- Python 3.11 이상, Git, GitHub CLI(`gh`), Rust/rustup, `just`, `cargo-nextest`, Node.js/npm, Bazel 또는 Bazelisk. `bazel` 명령이 PATH에서 실행돼야 합니다.
+- Python 3.11 이상, Git, GitHub CLI(`gh`), Rust/rustup, `just`, `cargo-nextest`, Node.js/npm, Bazel 9.2.0 또는 Bazelisk. `bazel` 명령이 PATH에서 실행돼야 합니다. Codex 0.162.1은 Bazel 9.2.0을 요구하며, Bazelisk는 소스에 지정된 버전을 선택할 수 있습니다.
 - Maeklog의 [Rust toolchain](../rust-toolchain.toml)은 1.97.1로 고정돼 있습니다. 통합 Codex는 내려받은 upstream 소스의 toolchain을 사용합니다. 소스 빌드와 의존성 다운로드에 필요한 시간과 디스크 공간을 확보하세요.
 
 요약에는 **추가 모델 사용량**이 발생하며 금액 기준 예산 상한은 없습니다. 수집한 기록은 로컬에 저장하고, 요약할 때 대화와 일부 기존 기록을 모델 서비스에 전송합니다. 새 탭의 수집은 기본으로 켜져 있으며 자동 요약은 오늘 수집된 완료 대화로 제한됩니다. 수집을 중지하려면 패널 메뉴의 **이 탭 수집 끄기**를 사용하세요. [저장·삭제와 사용 범위](usage.md#모델-사용량과-저장)를 먼저 확인해도 좋습니다.
@@ -18,7 +18,7 @@ Maeklog는 Herdr 안에서 Codex 대화를 탭별로 정리하는 플러그인�
 Herdr를 실행하고 그 안의 터미널에서 입력합니다.
 
 ```sh
-herdr plugin install reganpark/maeklog
+herdr plugin install reganpark/maeklog --ref v0.14.0
 herdr plugin list --plugin maeklog --json
 ```
 
