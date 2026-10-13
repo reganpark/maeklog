@@ -2,7 +2,7 @@
 
 [← Back to the overview](../README.md)
 
-Maeklog is available as source in [reganpark/maeklog](https://github.com/reganpark/maeklog). It has **not been registered or listed in Herdr Marketplace**. This guide describes manual setup from a local checkout.
+Maeklog is available as source in [reganpark/maeklog](https://github.com/reganpark/maeklog), with automatic discovery enabled in [Herdr Marketplace](https://herdr.dev/plugins/). The marketplace index refreshes every 30 minutes. This guide describes manual setup from a local checkout; installation still requires the hook approvals and integrated Codex client below.
 
 The order is: build and link Maeklog → register and trust the four hooks → check prerequisites → build the integrated Codex client → check a new conversation. The client patch supplies the tab identity and public progress the panel needs.
 

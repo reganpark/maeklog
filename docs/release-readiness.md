@@ -114,6 +114,7 @@ must retain the upstream licenses and notices for their complete dependency set.
 Private vulnerability reporting is enabled on GitHub; see
 [SECURITY.md](../SECURITY.md). A public repository with a
 valid root manifest on its default branch can be installed with
-`herdr plugin install reganpark/maeklog`. The optional `herdr-plugin` topic makes it
-eligible for discovery; it is not a review or compatibility certification. See
+`herdr plugin install reganpark/maeklog`. The repository now carries the
+`herdr-plugin` topic for automatic Marketplace discovery. The index refreshes
+every 30 minutes; discovery is not a review or compatibility certification. See
 [Herdr Marketplace documentation](https://herdr.dev/docs/marketplace/).
