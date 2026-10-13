@@ -21,3 +21,11 @@ Keep the aspect ratio and built-in spacing. The supplied notes recommend clear s
 The [original Korean notes](README-KO.txt) preserve the design provenance, the Nimbus Sans Regular attribution for the outlined wordmark, and the stated limits of the rights review.
 
 The earlier rejected concept is preserved in [archive/initial-concept](archive/initial-concept/README.md).
+
+## Repository social preview
+
+[PNG](maeklog-social-preview.png) · [SVG source](maeklog-social-preview.svg)
+
+The 1280 × 640 social preview places the original white horizontal logo on a solid dark background, with the README tagline below it. The original logo paths, proportions and built-in spacing are unchanged. The tagline uses Nimbus Sans Regular, matching the logo kit's wordmark attribution. This is a derived layout; the supplied logo files remain untouched.
+
+Upload the PNG through GitHub repository **Settings → General → Social preview → Edit → Upload an image**. Keeping this file in the repository alone does not configure the GitHub preview.
