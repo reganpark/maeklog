@@ -2,8 +2,8 @@
 
 Maeklog is prepared as a source-based Herdr plugin at
 [reganpark/maeklog](https://github.com/reganpark/maeklog). Start with the
-[English installation guide](setup.md). Linux verification covers the local
-release source and isolated installation. macOS remains experimental and needs
+[English installation guide](setup.md). Linux verification covers a fresh clone
+of the public repository, new source builds and isolated installation. macOS remains experimental and needs
 real-hardware testing; see the [public preview notes](releases/v0.14.0.md).
 
 ## Supported installation contract
@@ -55,6 +55,12 @@ available: `maeklog-update` points to its updater, scripts and bridge patches.
 
 ## Verification completed
 
+- A fresh clone of the public GitHub repository passed `scripts/check`: formatting,
+  Clippy, 287 Rust tests, the 55 Python tests below, a release build and the RustSec
+  audit of the locked dependencies.
+- The tab integration fixture passed first-record creation, independent tabs,
+  hiding, disabling, restart and moved-pane routing. A separate real Herdr session
+  opened the public-checkout panel and checked `m`, `F10` and `q`.
 - The four Python regression suites pass 55 tests covering native fingerprints,
   disabled/missing/stale approvals, malformed definitions, duplicate handlers,
   fresh installation, exact Herdr handler ownership, package version checks,
@@ -62,6 +68,10 @@ available: `maeklog-update` points to its updater, scripts and bridge patches.
 - Fingerprints for all four supported events match actual Codex 0.162.1
   `hooks/list` metadata in an isolated home. Only initialization and hook metadata
   were requested; no thread or model turn was submitted for that check.
+- Official Codex 0.162.1 source was cloned, patched and built in a fresh target
+  directory. Patch compatibility, dependency-lock normalization, Bazel metadata,
+  formatting, seven native bridge tests, Clippy, the release build, matching
+  official resources, installer, launcher and client-routing checks passed.
 - An initially empty disposable HOME received the real Maeklog hook installation.
   The human trust boundary was simulated only in that fixture. Local preflight,
   installation with no existing Codex entry point or Herdr SessionStart handler,
@@ -72,12 +82,18 @@ available: `maeklog-update` points to its updater, scripts and bridge patches.
   prompt/final collection, daemon-environment isolation, `/new`, normal exit,
   resume, a resumed turn, and detachment. Automatic summary inference was disabled.
   No external model inference was performed.
+- Re-running the public updater recognized the verified package without rebuilding.
+  The existing user's Codex configuration, hooks, launchers and Maeklog settings
+  were unchanged by the isolated verification.
 
-The empty-home test reused already checked client binaries and matching resources.
-It does not establish a new upstream source build on a clean machine, installation
-from a newly published GitHub repository, a new user's login or manual approval UI,
-macOS support, or actual summary-model access and quality. Other Codex releases
-remain subject to patch compatibility and the updater's complete verification.
+Both Maeklog and the integrated client were built from freshly cloned source;
+installed host build tools and downloaded dependency caches were reused. The long
+client build resumed in the same fresh build directory after its runner was
+interrupted, then completed the remaining checks before activation. This was an
+isolated-home test, not a pristine operating-system installation. It does not
+establish a new user's login or manual approval UI, macOS support, or actual
+summary-model access and quality. Other Codex releases remain subject to patch
+compatibility and the updater's complete verification.
 
 ## Public files and license
 
@@ -86,7 +102,8 @@ documentation, synthetic fixture scripts, and declared demo/capture assets. Buil
 products and private validation artifacts stay outside the public file set.
 The bounded public-file audit found no personal home paths, recognized credential
 shapes, authentication files, runtime hook/configuration backups, collected inboxes,
-or real reducer-failure captures. Review the final file set again before publication.
+or real reducer-failure captures. The release documentation also passed local-link,
+version-consistency and GitHub Markdown rendering checks.
 
 Maeklog's own code is under the [MIT license](../LICENSE). Upstream Codex-derived
 patch context and its attribution remain covered by the bundled
