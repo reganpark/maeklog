@@ -1,0 +1,225 @@
+diff --git a/codex-rs/tui/src/app.rs b/codex-rs/tui/src/app.rs
+index de47e41..46193ce 100644
+--- a/codex-rs/tui/src/app.rs
++++ b/codex-rs/tui/src/app.rs
+@@ -522,6 +522,7 @@ struct InitialHistoryReplayBuffer {
+ }
+ 
+ pub(crate) struct App {
++    herdr_bridge: Option<crate::herdr_bridge::HerdrBridge>,
+     feature_write_lock: Arc<tokio::sync::Mutex<()>>,
+     model_catalog: Arc<ModelCatalog>,
+     pub(crate) session_telemetry: SessionTelemetry,
+diff --git a/codex-rs/tui/src/app/startup.rs b/codex-rs/tui/src/app/startup.rs
+index f9da39c..d7510ad 100644
+--- a/codex-rs/tui/src/app/startup.rs
++++ b/codex-rs/tui/src/app/startup.rs
+@@ -819,6 +819,7 @@ See the Codex keymap documentation for supported actions and examples."
+             agents_overview: Default::default(),
+             side_threads: HashMap::new(),
+             abandoned_side_threads: HashSet::new(),
++            herdr_bridge: crate::herdr_bridge::HerdrBridge::from_env(),
+             active_thread_id: None,
+             active_thread_rx: None,
+             primary_thread_id: None,
+@@ -1292,6 +1293,9 @@ See the Codex keymap documentation for supported actions and examples."
+                 }
+             }
+         };
++        if let Some(bridge) = &mut app.herdr_bridge {
++            bridge.detach().await;
++        }
+         if let Err(err) = app_server.shutdown().await {
+             tracing::warn!(error = %err, "failed to shut down embedded app server");
+         }
+diff --git a/codex-rs/tui/src/app/test_support.rs b/codex-rs/tui/src/app/test_support.rs
+index 92b07cd..29c286b 100644
+--- a/codex-rs/tui/src/app/test_support.rs
++++ b/codex-rs/tui/src/app/test_support.rs
+@@ -18,6 +18,7 @@ pub(crate) async fn make_test_app() -> App {
+     let session_telemetry = test_session_telemetry(&config, model.as_str());
+ 
+     App {
++        herdr_bridge: None,
+         feature_write_lock: Arc::default(),
+         model_catalog: chat_widget.model_catalog(),
+         session_telemetry,
+diff --git a/codex-rs/tui/src/app/tests.rs b/codex-rs/tui/src/app/tests.rs
+index a25fcab..3cc417f 100644
+--- a/codex-rs/tui/src/app/tests.rs
++++ b/codex-rs/tui/src/app/tests.rs
+@@ -6022,6 +6022,7 @@ async fn make_test_app() -> Box<App> {
+         agents_overview: Default::default(),
+         side_threads: HashMap::new(),
+         abandoned_side_threads: HashSet::new(),
++        herdr_bridge: None,
+         active_thread_id: None,
+         active_thread_rx: None,
+         primary_thread_id: None,
+@@ -6137,6 +6138,7 @@ pub(super) async fn make_test_app_with_channels() -> (
+             agents_overview: Default::default(),
+             side_threads: HashMap::new(),
+             abandoned_side_threads: HashSet::new(),
++            herdr_bridge: None,
+             active_thread_id: None,
+             active_thread_rx: None,
+             primary_thread_id: None,
+diff --git a/codex-rs/tui/src/app/thread_routing.rs b/codex-rs/tui/src/app/thread_routing.rs
+index a3501c3..4013e87 100644
+--- a/codex-rs/tui/src/app/thread_routing.rs
++++ b/codex-rs/tui/src/app/thread_routing.rs
+@@ -96,6 +96,9 @@ impl App {
+             None
+         };
+         self.active_thread_id = Some(thread_id);
++        if let Some(bridge) = &mut self.herdr_bridge {
++            bridge.attach(thread_id.to_string()).await;
++        }
+         self.active_thread_rx = receiver;
+         self.refresh_pending_thread_approvals().await;
+     }
+@@ -131,6 +134,9 @@ impl App {
+     }
+ 
+     pub(super) async fn clear_active_thread(&mut self) {
++        if let Some(bridge) = &mut self.herdr_bridge {
++            bridge.detach().await;
++        }
+         if let Some(active_id) = self.active_thread_id.take() {
+             self.set_thread_active(active_id, /*active*/ false).await;
+         }
+@@ -530,6 +536,14 @@ impl App {
+ 
+         crate::session_log::log_outbound_op(&op);
+ 
++        // Complete the local registration before server hooks can observe this
++        // request. Refresh also repairs a connection after a Herdr restart.
++        if matches!(&op, AppCommand::UserTurn { .. })
++            && let Some(bridge) = &mut self.herdr_bridge
++        {
++            bridge.attach(thread_id.to_string()).await;
++        }
++
+         if self
+             .try_resolve_app_server_request(app_server, thread_id, &op)
+             .await?
+diff --git a/codex-rs/tui/src/herdr_bridge.rs b/codex-rs/tui/src/herdr_bridge.rs
+new file mode 100644
+index 0000000..1f96eac
+--- /dev/null
++++ b/codex-rs/tui/src/herdr_bridge.rs
+@@ -0,0 +1,64 @@
++//! Reports the terminal client's thread, never the shared server's environment.
++//! Optional local Maeklog adapter; failures must not stop a Codex conversation.
++use std::path::PathBuf;
++use std::process::Stdio;
++use std::time::Duration;
++
++pub(crate) struct HerdrBridge {
++    executable: PathBuf,
++    thread: Option<String>,
++}
++
++impl HerdrBridge {
++    pub(crate) fn from_env() -> Option<Self> {
++        if std::env::var("HERDR_ENV").as_deref() != Ok("1")
++            || std::env::var_os("HERDR_PANE_ID").is_none()
++            || std::env::var_os("HERDR_SOCKET_PATH").is_none()
++        {
++            return None;
++        }
++        let executable = std::env::var_os("MAEKLOG_CLIENT_BIN")
++            .map(PathBuf::from)
++            .or_else(|| {
++                let config = std::env::var_os("XDG_CONFIG_HOME")
++                    .map(PathBuf::from)
++                    .or_else(|| {
++                        std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".config"))
++                    })?;
++                Some(config.join("herdr/plugins/config/maeklog/bin/maeklog-hook"))
++            })?;
++        executable.is_file().then_some(Self {
++            executable,
++            thread: None,
++        })
++    }
++
++    pub(crate) async fn attach(&mut self, thread: String) {
++        self.thread = Some(thread.clone());
++        self.report("attach", &thread).await;
++    }
++
++    pub(crate) async fn detach(&mut self) {
++        if let Some(thread) = self.thread.take() {
++            self.report("detach", &thread).await;
++        }
++    }
++
++    async fn report(&self, action: &str, thread: &str) {
++        let mut command = tokio::process::Command::new(&self.executable);
++        command.args(["client", action, &std::process::id().to_string(), thread]);
++        command
++            .stdin(Stdio::null())
++            .stdout(Stdio::null())
++            .stderr(Stdio::null())
++            .kill_on_drop(true);
++        match tokio::time::timeout(Duration::from_secs(2), command.status()).await {
++            Ok(Ok(status)) if status.success() => {}
++            result => tracing::warn!(?result, "Maeklog client connection update failed"),
++        }
++    }
++}
++
++#[cfg(test)]
++#[path = "herdr_bridge_tests.rs"]
++mod tests;
+diff --git a/codex-rs/tui/src/herdr_bridge_tests.rs b/codex-rs/tui/src/herdr_bridge_tests.rs
+new file mode 100644
+index 0000000..3e5a7b4
+--- /dev/null
++++ b/codex-rs/tui/src/herdr_bridge_tests.rs
+@@ -0,0 +1,32 @@
++#[cfg(unix)]
++#[tokio::test]
++async fn sends_ordered_attach_switch_and_detach_from_the_client() {
++    use super::HerdrBridge;
++    use pretty_assertions::assert_eq;
++    use std::os::unix::fs::PermissionsExt;
++    let root = tempfile::tempdir().unwrap();
++    let script = root.path().join("bridge");
++    // A fixed sibling output path avoids interpolating paths into shell source.
++    std::fs::write(
++        &script,
++        "#!/bin/sh\nprintf '%s %s %s %s\\n' \"$1\" \"$2\" \"$3\" \"$4\" >> \"$0.calls\"\n",
++    )
++    .unwrap();
++    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700)).unwrap();
++    let mut bridge = HerdrBridge {
++        executable: script.clone(),
++        thread: None,
++    };
++    bridge.attach("thread-a".into()).await;
++    bridge.attach("thread-b".into()).await;
++    bridge.detach().await;
++    bridge.detach().await;
++    let actual = std::fs::read_to_string(script.with_extension("calls")).unwrap();
++    let pid = std::process::id();
++    assert_eq!(
++        actual,
++        format!(
++            "client attach {pid} thread-a\nclient attach {pid} thread-b\nclient detach {pid} thread-b\n"
++        )
++    );
++}
+diff --git a/codex-rs/tui/src/lib.rs b/codex-rs/tui/src/lib.rs
+index 1e04ab8..6dbfa41 100644
+--- a/codex-rs/tui/src/lib.rs
++++ b/codex-rs/tui/src/lib.rs
+@@ -151,6 +151,7 @@ mod get_git_diff;
+ mod git_action_directives;
+ mod goal_display;
+ mod goal_files;
++mod herdr_bridge;
+ mod history_cell;
+ mod hooks_rpc;
+ mod ide_context;

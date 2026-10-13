@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+if ! command -v cargo-audit >/dev/null 2>&1; then
+  printf '%s\n' 'cargo-audit is required; install it in a temporary tool root or your trusted toolchain' >&2
+  exit 1
+fi
+
+cargo audit --deny warnings
+

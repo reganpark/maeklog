@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+
+cargo fmt --all --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+cargo build --locked --release
+
+python3 scripts/test-codex-hook-trust.py
+python3 scripts/test-install-client-routing.py
+python3 scripts/test-codex-launcher.py
+python3 scripts/test-update-codex-maeklog.py
+
+if command -v cargo-audit >/dev/null 2>&1; then
+  cargo audit --deny warnings
+else
+  printf '%s\n' 'note: cargo-audit is not installed; run scripts/audit-dependencies separately'
+fi
+

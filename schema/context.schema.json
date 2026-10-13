@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "objective",
+    "objective_evidence",
+    "discussion",
+    "decisions",
+    "progress",
+    "blockers",
+    "next_actions",
+    "notes"
+  ],
+  "properties": {
+    "objective": { "type": "string", "maxLength": 600 },
+    "objective_evidence": {
+      "type": "array",
+      "maxItems": 8,
+      "items": { "type": "string", "maxLength": 120 }
+    },
+    "discussion": {
+      "type": "array",
+      "maxItems": 6,
+      "items": { "type": "string", "maxLength": 400 }
+    },
+    "decisions": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "text", "status", "supersedes", "evidence"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^D-[0-9]{3,}$" },
+          "text": { "type": "string", "maxLength": 400 },
+          "status": {
+            "type": "string",
+            "enum": ["active", "proposed", "superseded", "reversed"]
+          },
+          "supersedes": {
+            "anyOf": [
+              { "type": "null" },
+              { "type": "string", "pattern": "^D-[0-9]{3,}$" }
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "maxItems": 8,
+            "items": { "type": "string", "maxLength": 120 }
+          }
+        }
+      }
+    },
+    "progress": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "status", "evidence"],
+        "properties": {
+          "text": { "type": "string", "maxLength": 400 },
+          "status": {
+            "type": "string",
+            "enum": ["done", "reported", "in_progress", "blocked", "unverified"]
+          },
+          "evidence": {
+            "type": "array",
+            "maxItems": 8,
+            "items": { "type": "string", "maxLength": 120 }
+          }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "maxItems": 4,
+      "items": { "type": "string", "maxLength": 400 }
+    },
+    "next_actions": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["owner", "text", "evidence"],
+        "properties": {
+          "owner": {
+            "type": "string",
+            "enum": ["user", "sol", "luna", "unknown"]
+          },
+          "text": { "type": "string", "maxLength": 400 },
+          "evidence": {
+            "type": "array",
+            "maxItems": 8,
+            "items": { "type": "string", "maxLength": 120 }
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "maxItems": 4,
+      "items": { "type": "string", "maxLength": 400 }
+    }
+  }
+}

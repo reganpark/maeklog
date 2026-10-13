@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["current", "progress", "remaining"],
+  "properties": {
+    "current": { "$ref": "#/$defs/statement" },
+    "progress": { "type": "array", "maxItems": 6, "items": { "$ref": "#/$defs/statement" } },
+    "remaining": { "type": "array", "maxItems": 5, "items": { "$ref": "#/$defs/statement" } }
+  },
+  "$defs": {
+    "statement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "evidence"],
+      "properties": {
+        "text": { "type": "string", "maxLength": 400 },
+        "evidence": { "type": "array", "maxItems": 6, "items": { "type": "string" } }
+      }
+    }
+  }
+}

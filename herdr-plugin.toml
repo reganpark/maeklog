@@ -1,0 +1,86 @@
+id = "maeklog"
+name = "Maeklog"
+version = "0.14.0"
+min_herdr_version = "0.8.2"
+description = "Tab-scoped project memory, evidence and user corrections."
+platforms = ["linux", "macos"]
+
+[[build]]
+command = ["cargo", "build", "--locked", "--release"]
+
+[[startup]]
+command = ["target/release/maeklog", "action", "startup"]
+
+[[actions]]
+id = "open"
+title = "Open Maeklog"
+contexts = ["workspace"]
+command = ["target/release/maeklog", "action", "open"]
+
+[[actions]]
+id = "hide"
+title = "Hide Maeklog (keep collecting)"
+contexts = ["workspace"]
+command = ["target/release/maeklog", "action", "hide"]
+
+[[actions]]
+id = "disable"
+title = "Turn off Maeklog in this Tab"
+contexts = ["workspace"]
+command = ["target/release/maeklog", "action", "disable"]
+
+[[actions]]
+id = "enable"
+title = "Turn on Maeklog in this Tab"
+contexts = ["workspace"]
+command = ["target/release/maeklog", "action", "enable"]
+
+[[actions]]
+id = "refresh"
+title = "Retry today's Maeklog"
+contexts = ["workspace"]
+command = ["target/release/maeklog", "action", "refresh"]
+
+[[actions]]
+id = "rebuild"
+title = "Previous dates: select a date with b in Maeklog panel"
+contexts = ["workspace"]
+command = ["target/release/maeklog", "action", "rebuild"]
+
+[[actions]]
+id = "install-codex-hooks"
+title = "Install Maeklog Codex hooks"
+contexts = ["workspace"]
+command = ["target/release/maeklog", "action", "install-codex-hooks"]
+
+[[actions]]
+id = "remove-codex-hooks"
+title = "Remove Maeklog Codex hooks"
+contexts = ["workspace"]
+command = ["target/release/maeklog", "action", "remove-codex-hooks"]
+
+[[events]]
+on = "workspace.focused"
+command = ["target/release/maeklog", "action", "workspace-focused"]
+
+[[events]]
+on = "workspace.created"
+command = ["target/release/maeklog", "action", "workspace-focused"]
+
+[[events]]
+on = "pane.closed"
+command = ["target/release/maeklog", "action", "pane-closed"]
+
+[[events]]
+on = "pane.exited"
+command = ["target/release/maeklog", "action", "pane-exited"]
+
+[[events]]
+on = "workspace.closed"
+command = ["target/release/maeklog", "action", "workspace-closed"]
+
+[[panes]]
+id = "context"
+title = "Maeklog"
+placement = "split"
+command = ["sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/target/release/maeklog\" panel"]

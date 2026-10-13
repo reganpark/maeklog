@@ -1,0 +1,27 @@
+[package]
+name = "maeklog"
+version = "0.14.0"
+edition = "2024"
+rust-version = "1.89"
+description = "Tab-scoped project memory with evidence, user corrections and configurable Codex summaries for Herdr"
+license = "MIT"
+publish = false
+
+[dependencies]
+crossterm = { version = "=0.29.0", default-features = false, features = ["events", "bracketed-paste"] }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+unicode-width = "=0.2.2"
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+panic = "abort"
+strip = true
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "deny"
+pedantic = "warn"

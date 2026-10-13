@@ -1,0 +1,897 @@
+diff --git a/codex-rs/tui/src/app.rs b/codex-rs/tui/src/app.rs
+index 37b5c78..dec14ef 100644
+--- a/codex-rs/tui/src/app.rs
++++ b/codex-rs/tui/src/app.rs
+@@ -523,6 +523,7 @@ struct InitialHistoryReplayBuffer {
+ }
+ 
+ pub(crate) struct App {
++    herdr_bridge: Option<crate::herdr_bridge::HerdrBridge>,
+     feature_write_lock: Arc<tokio::sync::Mutex<()>>,
+     model_catalog: Arc<ModelCatalog>,
+     pub(crate) session_telemetry: SessionTelemetry,
+diff --git a/codex-rs/tui/src/app/app_server_events.rs b/codex-rs/tui/src/app/app_server_events.rs
+index 81e00f8..d85a566 100644
+--- a/codex-rs/tui/src/app/app_server_events.rs
++++ b/codex-rs/tui/src/app/app_server_events.rs
+@@ -220,6 +220,14 @@ impl App {
+                 .entry(thread_id)
+                 .or_default();
+         }
++        // Child and helper streams must never become the terminal client's PM progress.
++        if let Some(primary) = self.primary_thread_id
++            && self.active_thread_id == Some(primary)
++            && !self.agent_navigation.is_parent_owned(primary)
++            && let Some(bridge) = &mut self.herdr_bridge
++        {
++            bridge.observe(&notification, self.chat_widget.config_ref().cwd.as_path());
++        }
+         self.track_agents_overview_notification(&notification);
+         // Retained blank sessions stay subscribed after their event channels are cleared.
+         if let ServerNotification::ThreadSettingsUpdated(settings) = &notification
+diff --git a/codex-rs/tui/src/app/startup.rs b/codex-rs/tui/src/app/startup.rs
+index 37add4b..74fd2c6 100644
+--- a/codex-rs/tui/src/app/startup.rs
++++ b/codex-rs/tui/src/app/startup.rs
+@@ -853,6 +853,7 @@ See the Codex keymap documentation for supported actions and examples."
+             agents_overview: Default::default(),
+             side_threads: HashMap::new(),
+             abandoned_side_threads: HashSet::new(),
++            herdr_bridge: crate::herdr_bridge::HerdrBridge::from_env(),
+             active_thread_id: None,
+             active_thread_rx: None,
+             primary_thread_id: None,
+@@ -1332,6 +1333,9 @@ See the Codex keymap documentation for supported actions and examples."
+                 }
+             }
+         };
++        if let Some(bridge) = &mut app.herdr_bridge {
++            bridge.detach().await;
++        }
+         if let Err(err) = app_server.shutdown().await {
+             tracing::warn!(error = %err, "failed to shut down embedded app server");
+         }
+diff --git a/codex-rs/tui/src/app/test_support.rs b/codex-rs/tui/src/app/test_support.rs
+index 135c411..aa8e733 100644
+--- a/codex-rs/tui/src/app/test_support.rs
++++ b/codex-rs/tui/src/app/test_support.rs
+@@ -18,6 +18,7 @@ pub(crate) async fn make_test_app() -> App {
+     let session_telemetry = test_session_telemetry(&config, model.as_str());
+ 
+     App {
++        herdr_bridge: None,
+         feature_write_lock: Arc::default(),
+         model_catalog: chat_widget.model_catalog(),
+         session_telemetry,
+diff --git a/codex-rs/tui/src/app/tests.rs b/codex-rs/tui/src/app/tests.rs
+index 9c1af27..09878d5 100644
+--- a/codex-rs/tui/src/app/tests.rs
++++ b/codex-rs/tui/src/app/tests.rs
+@@ -6070,6 +6070,7 @@ async fn make_test_app() -> Box<App> {
+         agents_overview: Default::default(),
+         side_threads: HashMap::new(),
+         abandoned_side_threads: HashSet::new(),
++        herdr_bridge: None,
+         active_thread_id: None,
+         active_thread_rx: None,
+         primary_thread_id: None,
+@@ -6187,6 +6188,7 @@ pub(super) async fn make_test_app_with_channels() -> (
+             agents_overview: Default::default(),
+             side_threads: HashMap::new(),
+             abandoned_side_threads: HashSet::new(),
++            herdr_bridge: None,
+             active_thread_id: None,
+             active_thread_rx: None,
+             primary_thread_id: None,
+diff --git a/codex-rs/tui/src/app/thread_routing.rs b/codex-rs/tui/src/app/thread_routing.rs
+index 341eaa0..68f5fe1 100644
+--- a/codex-rs/tui/src/app/thread_routing.rs
++++ b/codex-rs/tui/src/app/thread_routing.rs
+@@ -96,6 +96,9 @@ impl App {
+             None
+         };
+         self.active_thread_id = Some(thread_id);
++        if let Some(bridge) = &mut self.herdr_bridge {
++            bridge.attach(thread_id.to_string()).await;
++        }
+         self.active_thread_rx = receiver;
+         self.refresh_pending_thread_approvals().await;
+     }
+@@ -131,6 +134,9 @@ impl App {
+     }
+ 
+     pub(super) async fn clear_active_thread(&mut self) {
++        if let Some(bridge) = &mut self.herdr_bridge {
++            bridge.detach().await;
++        }
+         if let Some(active_id) = self.active_thread_id.take() {
+             self.set_thread_active(active_id, /*active*/ false).await;
+         }
+@@ -530,6 +536,14 @@ impl App {
+ 
+         crate::session_log::log_outbound_op(&op);
+ 
++        // Complete the local registration before server hooks can observe this
++        // request. Refresh also repairs a connection after a Herdr restart.
++        if matches!(&op, AppCommand::UserTurn { .. })
++            && let Some(bridge) = &mut self.herdr_bridge
++        {
++            bridge.attach(thread_id.to_string()).await;
++        }
++
+         if self
+             .try_resolve_app_server_request(app_server, thread_id, &op)
+             .await?
+diff --git a/codex-rs/tui/src/herdr_bridge.rs b/codex-rs/tui/src/herdr_bridge.rs
+new file mode 100644
+index 0000000..55a93fb
+--- /dev/null
++++ b/codex-rs/tui/src/herdr_bridge.rs
+@@ -0,0 +1,92 @@
++//! Reports the terminal client's thread, never the shared server's environment.
++//! Optional local Maeklog adapter; failures must not stop a Codex conversation.
++use std::path::PathBuf;
++use std::process::Stdio;
++use std::time::Duration;
++
++#[path = "herdr_bridge_live.rs"]
++mod live;
++
++pub(crate) struct HerdrBridge {
++    executable: PathBuf,
++    thread: Option<String>,
++    progress: Option<live::LiveProgress>,
++}
++
++impl HerdrBridge {
++    pub(crate) fn from_env() -> Option<Self> {
++        if std::env::var("HERDR_ENV").as_deref() != Ok("1")
++            || std::env::var_os("HERDR_PANE_ID").is_none()
++            || std::env::var_os("HERDR_SOCKET_PATH").is_none()
++        {
++            return None;
++        }
++        let executable = std::env::var_os("MAEKLOG_CLIENT_BIN")
++            .map(PathBuf::from)
++            .or_else(|| {
++                let config = std::env::var_os("XDG_CONFIG_HOME")
++                    .map(PathBuf::from)
++                    .or_else(|| {
++                        std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".config"))
++                    })?;
++                Some(config.join("herdr/plugins/config/maeklog/bin/maeklog-hook"))
++            })?;
++        executable.is_file().then_some(Self {
++            executable,
++            thread: None,
++            progress: None,
++        })
++    }
++
++    pub(crate) async fn attach(&mut self, thread: String) {
++        if self.thread.as_ref() != Some(&thread)
++            && let Some(progress) = &mut self.progress
++        {
++            progress.clear_active_turn();
++        }
++        self.thread = Some(thread.clone());
++        self.report("attach", &thread).await;
++    }
++
++    pub(crate) async fn detach(&mut self) {
++        if let Some(progress) = &mut self.progress {
++            progress.clear_active_turn();
++        }
++        if let Some(thread) = self.thread.take() {
++            self.report("detach", &thread).await;
++        }
++    }
++
++    /// Copies only bounded public progress; command delivery runs off the TUI event path.
++    pub(crate) fn observe(
++        &mut self,
++        notification: &codex_app_server_protocol::ServerNotification,
++        cwd: &std::path::Path,
++    ) {
++        let Some(thread) = &self.thread else {
++            return;
++        };
++        let progress = self
++            .progress
++            .get_or_insert_with(|| live::LiveProgress::new(self.executable.clone()));
++        progress.observe(thread, notification, cwd);
++    }
++
++    async fn report(&self, action: &str, thread: &str) {
++        let mut command = tokio::process::Command::new(&self.executable);
++        command.args(["client", action, &std::process::id().to_string(), thread]);
++        command
++            .stdin(Stdio::null())
++            .stdout(Stdio::null())
++            .stderr(Stdio::null())
++            .kill_on_drop(true);
++        match tokio::time::timeout(Duration::from_secs(2), command.status()).await {
++            Ok(Ok(status)) if status.success() => {}
++            result => tracing::warn!(?result, "Maeklog client connection update failed"),
++        }
++    }
++}
++
++#[cfg(test)]
++#[path = "herdr_bridge_tests.rs"]
++mod tests;
+diff --git a/codex-rs/tui/src/herdr_bridge_live.rs b/codex-rs/tui/src/herdr_bridge_live.rs
+new file mode 100644
+index 0000000..0f461c3
+--- /dev/null
++++ b/codex-rs/tui/src/herdr_bridge_live.rs
+@@ -0,0 +1,319 @@
++//! Bounded public notification projection and best-effort local background delivery.
++use codex_app_server_protocol::PatchChangeKind;
++use codex_app_server_protocol::ServerNotification;
++use codex_app_server_protocol::ThreadItem;
++use codex_protocol::models::MessagePhase;
++use serde_json::Value;
++use serde_json::json;
++use std::collections::VecDeque;
++use std::path::Path;
++use std::path::PathBuf;
++use std::process::Stdio;
++use std::sync::Arc;
++use std::sync::Mutex;
++use std::time::Duration;
++use tokio::io::AsyncWriteExt;
++use tokio::sync::Notify;
++use tokio::task::JoinHandle;
++
++const MAX_PENDING: usize = 64;
++const MAX_PAYLOAD: usize = 32 * 1024;
++const MAX_ENDED_TURNS: usize = 32;
++
++struct PendingEvent {
++    thread: String,
++    turn: String,
++    key: String,
++    method: &'static str,
++    bytes: Vec<u8>,
++}
++
++#[derive(Default)]
++struct Pending(VecDeque<PendingEvent>);
++
++impl Pending {
++    fn push(&mut self, event: PendingEvent) {
++        self.0.retain(|queued| {
++            queued.thread != event.thread || queued.turn != event.turn || queued.key != event.key
++        });
++        if self.0.len() == MAX_PENDING {
++            // Latest public state supersedes pending updates, while turn terminal events
++            // survive tool floods. Only obsolete lifecycle history can exhaust this reserve.
++            let expendable = self
++                .0
++                .iter()
++                .position(|queued| !matches!(queued.method, "turn/started" | "turn/completed"));
++            if let Some(index) = expendable {
++                self.0.remove(index);
++            } else if event.method == "turn/completed" {
++                self.0.pop_front();
++            } else {
++                return;
++            }
++        }
++        self.0.push_back(event);
++    }
++}
++
++pub(super) struct LiveProgress {
++    active: Option<(String, String, PathBuf)>,
++    ended: VecDeque<(String, String)>,
++    sequence: u64,
++    pending: Arc<Mutex<Pending>>,
++    wake: Arc<Notify>,
++    worker: JoinHandle<()>,
++}
++
++impl LiveProgress {
++    pub(super) fn new(executable: PathBuf) -> Self {
++        let pending = Arc::new(Mutex::new(Pending::default()));
++        let wake = Arc::new(Notify::new());
++        let worker = tokio::spawn(deliver(executable, Arc::clone(&pending), Arc::clone(&wake)));
++        Self {
++            active: None,
++            ended: VecDeque::new(),
++            sequence: 0,
++            pending,
++            wake,
++            worker,
++        }
++    }
++
++    pub(super) fn clear_active_turn(&mut self) {
++        self.active = None;
++    }
++
++    pub(super) fn observe(
++        &mut self,
++        attached: &str,
++        notification: &ServerNotification,
++        cwd: &Path,
++    ) {
++        let (thread, turn, method, key, params) = match notification {
++            ServerNotification::TurnStarted(event) => (
++                &event.thread_id,
++                &event.turn.id,
++                "turn/started",
++                "started".to_string(),
++                json!({"threadId": event.thread_id, "turn": {"id": event.turn.id, "status": event.turn.status}}),
++            ),
++            ServerNotification::TurnCompleted(event) => (
++                &event.thread_id,
++                &event.turn.id,
++                "turn/completed",
++                "completed".to_string(),
++                json!({"threadId": event.thread_id, "turn": {"id": event.turn.id, "status": event.turn.status}}),
++            ),
++            ServerNotification::TurnPlanUpdated(event) => (
++                &event.thread_id,
++                &event.turn_id,
++                "turn/plan/updated",
++                "plan".to_string(),
++                json!({"threadId": event.thread_id, "turnId": event.turn_id,
++                    "explanation": event.explanation.as_deref().map(|text| bounded(text, /*limit*/ 400)),
++                    "plan": event.plan.iter().take(/*n*/ 16).map(|step| json!({"step": bounded(&step.step, /*limit*/ 400), "status": step.status})).collect::<Vec<_>>()}),
++            ),
++            ServerNotification::ItemStarted(event) => {
++                let Some(item) = public_item(&event.item, "item/started") else {
++                    return;
++                };
++                (
++                    &event.thread_id,
++                    &event.turn_id,
++                    "item/started",
++                    format!("item:{}", event.item.id()),
++                    json!({"threadId": event.thread_id, "turnId": event.turn_id, "item": item}),
++                )
++            }
++            ServerNotification::ItemCompleted(event) => {
++                let Some(item) = public_item(&event.item, "item/completed") else {
++                    return;
++                };
++                let key = if matches!(&event.item, ThreadItem::AgentMessage { .. }) {
++                    "report".to_string()
++                } else {
++                    format!("item:{}", event.item.id())
++                };
++                (
++                    &event.thread_id,
++                    &event.turn_id,
++                    "item/completed",
++                    key,
++                    json!({"threadId": event.thread_id, "turnId": event.turn_id, "item": item}),
++                )
++            }
++            _ => return,
++        };
++        if thread != attached
++            || thread.len() > 200
++            || turn.len() > 200
++            || self
++                .ended
++                .iter()
++                .any(|ended| ended.0 == *thread && ended.1 == *turn)
++        {
++            return;
++        }
++        if method == "turn/started" {
++            if self
++                .active
++                .as_ref()
++                .is_some_and(|active| active.0 == *thread && active.1 == *turn)
++            {
++                return;
++            }
++            self.active = Some((thread.clone(), turn.clone(), cwd.to_path_buf()));
++        }
++        let Some((active_thread, active_turn, turn_cwd)) = &self.active else {
++            return;
++        };
++        if active_thread != thread || active_turn != turn {
++            return;
++        }
++        self.sequence = self.sequence.saturating_add(1);
++        let envelope = json!({"sequence": self.sequence, "cwd": turn_cwd.to_string_lossy(),
++            "notification": {"method": method, "params": params}});
++        if let Ok(bytes) = serde_json::to_vec(&envelope)
++            && bytes.len() < MAX_PAYLOAD
++        {
++            self.pending
++                .lock()
++                .unwrap_or_else(std::sync::PoisonError::into_inner)
++                .push(PendingEvent {
++                    thread: thread.clone(),
++                    turn: turn.clone(),
++                    key,
++                    method,
++                    bytes,
++                });
++            self.wake.notify_one();
++        }
++        if method == "turn/completed" {
++            if self.ended.len() == MAX_ENDED_TURNS {
++                self.ended.pop_front();
++            }
++            self.ended.push_back((thread.clone(), turn.clone()));
++            self.active = None;
++        }
++    }
++}
++
++impl Drop for LiveProgress {
++    fn drop(&mut self) {
++        self.worker.abort();
++    }
++}
++
++fn bounded(text: &str, limit: usize) -> String {
++    text.chars().take(limit).collect()
++}
++
++fn public_item(item: &ThreadItem, method: &str) -> Option<Value> {
++    if item.id().len() > 200 {
++        return None;
++    }
++    let mut fields = match item {
++        ThreadItem::AgentMessage { text, phase, .. }
++            if method == "item/completed" && phase.as_ref() != Some(&MessagePhase::FinalAnswer) =>
++        {
++            json!({"type": "agentMessage", "text": bounded(text, /*limit*/ 4000), "phase": phase})
++        }
++        ThreadItem::CommandExecution {
++            command,
++            status,
++            exit_code,
++            ..
++        } => {
++            json!({"type": "commandExecution", "command": bounded(command, /*limit*/ 300), "status": status, "exitCode": exit_code})
++        }
++        ThreadItem::McpToolCall {
++            server,
++            tool,
++            status,
++            ..
++        } => {
++            json!({"type": "mcpToolCall", "server": bounded(server, /*limit*/ 160), "tool": bounded(tool, /*limit*/ 160), "status": status})
++        }
++        ThreadItem::DynamicToolCall { tool, status, .. } => {
++            json!({"type": "dynamicToolCall", "tool": bounded(tool, /*limit*/ 160), "status": status})
++        }
++        ThreadItem::CollabAgentToolCall { tool, status, .. } => {
++            json!({"type": "collabAgentToolCall", "tool": tool, "status": status})
++        }
++        ThreadItem::FileChange {
++            changes, status, ..
++        } => {
++            let changes: Vec<_> = changes
++                .iter()
++                .take(/*n*/ 16)
++                .map(|change| {
++                    let kind = match &change.kind {
++                        PatchChangeKind::Add => json!({"type": "add"}),
++                        PatchChangeKind::Delete => json!({"type": "delete"}),
++                        PatchChangeKind::Update { .. } => json!({"type": "update"}),
++                    };
++                    json!({"path": bounded(&change.path, /*limit*/ 400), "kind": kind})
++                })
++                .collect();
++            json!({"type": "fileChange", "changes": changes, "status": status})
++        }
++        ThreadItem::ImageView { path, .. } => {
++            json!({"type": "imageView", "path": bounded(path.as_str(), /*limit*/ 400)})
++        }
++        ThreadItem::WebSearch(search) => {
++            json!({"type": "webSearch", "query": bounded(&search.query, /*limit*/ 300)})
++        }
++        ThreadItem::AgentMessage { .. }
++        | ThreadItem::UserMessage { .. }
++        | ThreadItem::HookPrompt { .. }
++        | ThreadItem::FunctionCallOutput { .. }
++        | ThreadItem::Plan { .. }
++        | ThreadItem::Reasoning { .. }
++        | ThreadItem::SubAgentActivity { .. }
++        | ThreadItem::Sleep(_)
++        | ThreadItem::ImageGeneration(_)
++        | ThreadItem::EnteredReviewMode { .. }
++        | ThreadItem::ExitedReviewMode { .. }
++        | ThreadItem::ContextCompaction { .. } => return None,
++    };
++    fields["id"] = json!(item.id());
++    Some(fields)
++}
++
++async fn deliver(executable: PathBuf, pending: Arc<Mutex<Pending>>, wake: Arc<Notify>) {
++    let pid = std::process::id().to_string();
++    loop {
++        let notified = wake.notified();
++        let next = pending
++            .lock()
++            .unwrap_or_else(std::sync::PoisonError::into_inner)
++            .0
++            .pop_front();
++        let Some(event) = next else {
++            notified.await;
++            continue;
++        };
++        let mut command = tokio::process::Command::new(&executable);
++        command.args(["live", "event", &pid, &event.thread]);
++        command
++            .stdin(Stdio::piped())
++            .stdout(Stdio::null())
++            .stderr(Stdio::null())
++            .kill_on_drop(true);
++        let result = tokio::time::timeout(Duration::from_secs(/*secs*/ 2), async {
++            let mut child = command.spawn()?;
++            if let Some(mut stdin) = child.stdin.take() {
++                stdin.write_all(&event.bytes).await?;
++            }
++            child.wait().await
++        })
++        .await;
++        if !matches!(&result, Ok(Ok(status)) if status.success()) {
++            tracing::warn!(?result, "Maeklog live progress delivery failed");
++        }
++    }
++}
++
++#[cfg(test)]
++#[path = "herdr_bridge_live_tests.rs"]
++mod tests;
+diff --git a/codex-rs/tui/src/herdr_bridge_live_tests.rs b/codex-rs/tui/src/herdr_bridge_live_tests.rs
+new file mode 100644
+index 0000000..20fd8ac
+--- /dev/null
++++ b/codex-rs/tui/src/herdr_bridge_live_tests.rs
+@@ -0,0 +1,293 @@
++use super::*;
++use pretty_assertions::assert_eq;
++
++fn notification(method: &str, params: Value) -> ServerNotification {
++    serde_json::from_value(json!({"method": method, "params": params})).unwrap()
++}
++
++fn lifecycle(method: &str, thread: &str, turn: &str) -> ServerNotification {
++    notification(
++        method,
++        json!({"threadId": thread, "turn": {
++            "id": turn, "status": if method == "turn/started" { "inProgress" } else { "completed" },
++            "items": [{"type": "reasoning", "id": "private", "summary": ["SECRET"], "content": []}]
++        }}),
++    )
++}
++
++fn report(thread: &str, turn: &str, text: &str) -> ServerNotification {
++    notification(
++        "item/completed",
++        json!({"threadId": thread, "turnId": turn,
++            "completedAtMs": 0,
++            "item": {"id": "report", "type": "agentMessage", "phase": "commentary", "text": text}
++        }),
++    )
++}
++
++fn queued(progress: &LiveProgress) -> Vec<Value> {
++    progress
++        .pending
++        .lock()
++        .unwrap()
++        .0
++        .iter()
++        .map(|event| serde_json::from_slice(&event.bytes).unwrap())
++        .collect()
++}
++
++#[test]
++fn projects_only_public_item_metadata_and_completed_reports() {
++    let inputs = [
++        json!({"id": "command", "type": "commandExecution", "command": "cargo check", "cwd": "/repo",
++            "status": "completed", "commandActions": [], "exitCode": 1, "aggregatedOutput": "SECRET"}),
++        json!({"id": "mcp", "type": "mcpToolCall", "server": "files", "tool": "read", "status": "completed",
++            "arguments": {"password": "SECRET"}, "result": {"content": [{"type": "text", "text": "SECRET"}]}}),
++        json!({"id": "dynamic", "type": "dynamicToolCall", "tool": "query", "status": "completed",
++            "arguments": {"secret": "SECRET"}, "contentItems": [{"type": "inputText", "text": "SECRET"}]}),
++        json!({"id": "file", "type": "fileChange", "status": "completed",
++            "changes": [{"path": "src/main.rs", "kind": {"type": "update", "move_path": null}, "diff": "SECRET"}]}),
++        json!({"id": "assistant", "type": "agentMessage", "phase": "commentary", "text": "Building checks."}),
++        json!({"id": "private", "type": "reasoning", "summary": ["SECRET"], "content": ["SECRET"]}),
++        json!({"id": "final", "type": "agentMessage", "phase": "final_answer", "text": "Final answer."}),
++    ];
++    let items: Vec<ThreadItem> = inputs
++        .into_iter()
++        .map(|value| serde_json::from_value(value).unwrap())
++        .collect();
++    assert_eq!(
++        items
++            .iter()
++            .filter_map(|item| public_item(item, "item/completed"))
++            .collect::<Vec<_>>(),
++        vec![
++            json!({"id": "command", "type": "commandExecution", "command": "cargo check", "status": "completed", "exitCode": 1}),
++            json!({"id": "mcp", "type": "mcpToolCall", "server": "files", "tool": "read", "status": "completed"}),
++            json!({"id": "dynamic", "type": "dynamicToolCall", "tool": "query", "status": "completed"}),
++            json!({"id": "file", "type": "fileChange", "status": "completed", "changes": [{"path": "src/main.rs", "kind": {"type": "update"}}]}),
++            json!({"id": "assistant", "type": "agentMessage", "phase": "commentary", "text": "Building checks."}),
++        ]
++    );
++    assert_eq!(public_item(&items[4], "item/started"), None);
++}
++
++#[tokio::test]
++async fn requires_attached_started_turn_freezes_cwd_and_rejects_late_events() {
++    let mut progress = LiveProgress::new(PathBuf::from("unused-test-hook"));
++    progress.observe(
++        "main",
++        &report("main", "turn-a", "before start"),
++        Path::new("/wrong"),
++    );
++    progress.observe(
++        "main",
++        &lifecycle("turn/started", "child", "child-turn"),
++        Path::new("/wrong"),
++    );
++    progress.observe(
++        "main",
++        &lifecycle("turn/started", "main", "turn-a"),
++        Path::new("/actual"),
++    );
++    progress.observe(
++        "main",
++        &report("main", "turn-a", "Working."),
++        Path::new("/later"),
++    );
++    progress.observe(
++        "main",
++        &lifecycle("turn/completed", "main", "turn-a"),
++        Path::new("/later"),
++    );
++    progress.observe(
++        "main",
++        &report("main", "turn-a", "late"),
++        Path::new("/later"),
++    );
++    progress.observe(
++        "main",
++        &lifecycle("turn/started", "main", "turn-a"),
++        Path::new("/later"),
++    );
++    progress.observe(
++        "main",
++        &lifecycle("turn/started", "main", "turn-b"),
++        Path::new("/new"),
++    );
++    progress.observe(
++        "main",
++        &lifecycle("turn/started", "main", "turn-a"),
++        Path::new("/later"),
++    );
++    assert_eq!(
++        queued(&progress),
++        vec![
++            json!({"sequence": 1, "cwd": "/actual", "notification": {"method": "turn/started", "params": {"threadId": "main", "turn": {"id": "turn-a", "status": "inProgress"}}}}),
++            json!({"sequence": 2, "cwd": "/actual", "notification": {"method": "item/completed", "params": {"threadId": "main", "turnId": "turn-a", "item": {"id": "report", "type": "agentMessage", "phase": "commentary", "text": "Working."}}}}),
++            json!({"sequence": 3, "cwd": "/actual", "notification": {"method": "turn/completed", "params": {"threadId": "main", "turn": {"id": "turn-a", "status": "completed"}}}}),
++            json!({"sequence": 4, "cwd": "/new", "notification": {"method": "turn/started", "params": {"threadId": "main", "turn": {"id": "turn-b", "status": "inProgress"}}}}),
++        ]
++    );
++}
++
++#[tokio::test]
++async fn bounds_text_plans_and_payloads_without_splitting_unicode() {
++    let mut progress = LiveProgress::new(PathBuf::from("unused-test-hook"));
++    progress.observe(
++        "main",
++        &lifecycle("turn/started", "main", "turn"),
++        Path::new("/repo"),
++    );
++    progress.observe(
++        "main",
++        &report("main", "turn", &"가".repeat(/*n*/ 5000)),
++        Path::new("/repo"),
++    );
++    let plan = notification(
++        "turn/plan/updated",
++        json!({"threadId": "main", "turnId": "turn",
++        "explanation": "Explanation.", "plan": (0..30).map(|_| json!({"step": "가".repeat(/*n*/ 500), "status": "inProgress"})).collect::<Vec<_>>() }),
++    );
++    progress.observe("main", &plan, Path::new("/repo"));
++    let events = queued(&progress);
++    assert_eq!(
++        events[1]["notification"]["params"]["item"]["text"],
++        json!("가".repeat(/*n*/ 4000))
++    );
++    assert_eq!(
++        events[2]["notification"]["params"]["plan"],
++        json!(
++            (0..16)
++                .map(|_| json!({"step": "가".repeat(/*n*/ 400), "status": "inProgress"}))
++                .collect::<Vec<_>>()
++        )
++    );
++    assert!(
++        progress
++            .pending
++            .lock()
++            .unwrap()
++            .0
++            .iter()
++            .all(|event| event.bytes.len() < MAX_PAYLOAD)
++    );
++}
++
++#[test]
++fn tool_flood_coalesces_item_lifecycle_without_evicting_turn_completion() {
++    let mut pending = Pending::default();
++    for (method, key) in [("turn/started", "started"), ("turn/completed", "completed")] {
++        pending.push(PendingEvent {
++            thread: "main".into(),
++            turn: "turn".into(),
++            key: key.into(),
++            method,
++            bytes: vec![],
++        });
++    }
++    for index in 0..200 {
++        let key = format!("item:{index}");
++        pending.push(PendingEvent {
++            thread: "main".into(),
++            turn: "turn".into(),
++            key: key.clone(),
++            method: "item/started",
++            bytes: vec![],
++        });
++        pending.push(PendingEvent {
++            thread: "main".into(),
++            turn: "turn".into(),
++            key,
++            method: "item/completed",
++            bytes: vec![],
++        });
++    }
++    assert_eq!(pending.0.len(), MAX_PENDING);
++    assert_eq!(
++        pending
++            .0
++            .iter()
++            .take(/*n*/ 2)
++            .map(|event| event.method)
++            .collect::<Vec<_>>(),
++        vec!["turn/started", "turn/completed"]
++    );
++    assert!(
++        pending
++            .0
++            .iter()
++            .skip(/*n*/ 2)
++            .all(|event| event.method == "item/completed")
++    );
++}
++
++#[cfg(unix)]
++#[tokio::test]
++async fn slow_failing_hook_runs_in_background_and_delivers_coalesced_native_envelopes() {
++    use std::os::unix::fs::PermissionsExt;
++    let root = tempfile::tempdir().unwrap();
++    let script = root.path().join("bridge");
++    std::fs::write(&script, "#!/bin/sh\nprintf '%s %s %s %s\\n' \"$1\" \"$2\" \"$3\" \"$4\" >> \"$0.calls\"\ncat >> \"$0.events\"\nprintf '\\n' >> \"$0.events\"\nwhile ! test -f \"$0.release\"; do sleep 0.01; done\nexit 1\n").unwrap();
++    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(/*mode*/ 0o700)).unwrap();
++    let mut progress = LiveProgress::new(script.clone());
++    progress.observe(
++        "main",
++        &lifecycle("turn/started", "main", "turn"),
++        Path::new("/repo"),
++    );
++    tokio::time::timeout(Duration::from_secs(/*secs*/ 2), async {
++        while !script.with_extension("events").exists() {
++            tokio::time::sleep(Duration::from_millis(/*millis*/ 10)).await;
++        }
++    })
++    .await
++    .unwrap();
++    for index in 0..100 {
++        progress.observe(
++            "main",
++            &report("main", "turn", &format!("Working {index}")),
++            Path::new("/repo"),
++        );
++        progress.observe("main", &notification("turn/plan/updated", json!({"threadId": "main", "turnId": "turn",
++            "explanation": null, "plan": [{"step": format!("Step {index}"), "status": "inProgress"}]})), Path::new("/repo"));
++    }
++    progress.observe(
++        "main",
++        &lifecycle("turn/completed", "main", "turn"),
++        Path::new("/repo"),
++    );
++    assert_eq!(queued(&progress).len(), 3);
++    std::fs::write(script.with_extension("release"), "").unwrap();
++    let events = tokio::time::timeout(Duration::from_secs(/*secs*/ 3), async {
++        loop {
++            let contents = std::fs::read_to_string(script.with_extension("events")).unwrap();
++            let events: Vec<Value> = contents
++                .lines()
++                .filter_map(|line| serde_json::from_str(line).ok())
++                .collect();
++            if events.len() == 4 {
++                break events;
++            }
++            tokio::time::sleep(Duration::from_millis(/*millis*/ 10)).await;
++        }
++    })
++    .await
++    .unwrap();
++    assert_eq!(
++        events
++            .iter()
++            .map(|event| event["sequence"].clone())
++            .collect::<Vec<_>>(),
++        vec![json!(1), json!(200), json!(201), json!(202)]
++    );
++    assert_eq!(
++        events[1]["notification"]["params"]["item"]["text"],
++        json!("Working 99")
++    );
++    assert_eq!(events[3]["notification"]["method"], json!("turn/completed"));
++    let pid = std::process::id();
++    assert_eq!(
++        std::fs::read_to_string(script.with_extension("calls")).unwrap(),
++        format!("live event {pid} main\n").repeat(/*n*/ 4)
++    );
++}
+diff --git a/codex-rs/tui/src/herdr_bridge_tests.rs b/codex-rs/tui/src/herdr_bridge_tests.rs
+new file mode 100644
+index 0000000..7459e6b
+--- /dev/null
++++ b/codex-rs/tui/src/herdr_bridge_tests.rs
+@@ -0,0 +1,33 @@
++#[cfg(unix)]
++#[tokio::test]
++async fn sends_ordered_attach_switch_and_detach_from_the_client() {
++    use super::HerdrBridge;
++    use pretty_assertions::assert_eq;
++    use std::os::unix::fs::PermissionsExt;
++    let root = tempfile::tempdir().unwrap();
++    let script = root.path().join("bridge");
++    // A fixed sibling output path avoids interpolating paths into shell source.
++    std::fs::write(
++        &script,
++        "#!/bin/sh\nprintf '%s %s %s %s\\n' \"$1\" \"$2\" \"$3\" \"$4\" >> \"$0.calls\"\n",
++    )
++    .unwrap();
++    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700)).unwrap();
++    let mut bridge = HerdrBridge {
++        executable: script.clone(),
++        thread: None,
++        progress: None,
++    };
++    bridge.attach("thread-a".into()).await;
++    bridge.attach("thread-b".into()).await;
++    bridge.detach().await;
++    bridge.detach().await;
++    let actual = std::fs::read_to_string(script.with_extension("calls")).unwrap();
++    let pid = std::process::id();
++    assert_eq!(
++        actual,
++        format!(
++            "client attach {pid} thread-a\nclient attach {pid} thread-b\nclient detach {pid} thread-b\n"
++        )
++    );
++}
+diff --git a/codex-rs/tui/src/lib.rs b/codex-rs/tui/src/lib.rs
+index 2697cba..78774cd 100644
+--- a/codex-rs/tui/src/lib.rs
++++ b/codex-rs/tui/src/lib.rs
+@@ -152,6 +152,7 @@ mod get_git_diff;
+ mod git_action_directives;
+ mod goal_display;
+ mod goal_files;
++mod herdr_bridge;
+ mod history_cell;
+ mod hooks_rpc;
+ mod ide_context;

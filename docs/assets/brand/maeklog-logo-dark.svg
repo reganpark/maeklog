@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="898" height="553" viewBox="0 0 898 553" role="img" aria-labelledby="title desc">
+  <title id="title">Maeklog — 맥락</title>
+  <desc id="desc">The Latin letters m, a, e, k, l, o, and g form two Korean syllable blocks reading 맥락. The repeated letters are the strokes of the mark.</desc>
+  <metadata>Original repo-native vector composition. Seven hand-designed Latin glyphs; no font dependency, raster tracing, image embedding, or Hangul font outline.</metadata>
+  <defs>
+    <path id="glyph-m" d="M0 100V0H24V12Q36 0 48 0Q65 0 71 14Q83 0 96 0Q130 0 130 32V100H106V38Q106 26 95 26Q83 26 83 40V100H59V38Q59 26 48 26Q24 26 24 40V100Z" fill-rule="evenodd"/>
+    <path id="glyph-a" d="M28 0H100V100H74V88Q60 100 28 100Q0 100 0 72V28Q0 0 28 0Z M28 26Q26 26 26 44V56Q26 74 44 74H56Q74 74 74 56V44Q74 26 56 26Z" fill-rule="evenodd"/>
+    <path id="glyph-e" d="M28 0H72Q100 0 100 28V66H22V72Q22 78 28 78H100V100H28Q0 100 0 72V28Q0 0 28 0Z M28 22Q22 22 22 28V44H78V30Q78 22 72 22Z" fill-rule="evenodd"/>
+    <path id="glyph-k" d="M0 0H26V38L64 0H98L50 48L104 100H70L26 56V100H0Z" fill-rule="evenodd"/>
+    <path id="glyph-l" d="M0 0H26V100H0Z" fill-rule="evenodd"/>
+    <path id="glyph-o" d="M28 0H72Q100 0 100 28V72Q100 100 72 100H28Q0 100 0 72V28Q0 0 28 0Z M38 26Q26 26 26 38V62Q26 74 38 74H62Q74 74 74 62V38Q74 26 62 26Z" fill-rule="evenodd"/>
+    <path id="glyph-g" d="M28 0H100V112Q100 136 76 136H8V110H70Q74 110 74 104V88Q58 100 28 100Q0 100 0 72V28Q0 0 28 0Z M38 26Q26 26 26 38V62Q26 74 38 74H56Q74 74 74 56V44Q74 26 56 26Z" fill-rule="evenodd"/>
+  </defs>
+  <g fill="#ffffff">
+    <use href="#glyph-o" transform="translate(64.000 64.000) scale(1.500000 2.300000)" data-letter="o" data-role="maek-initial"/>
+    <use href="#glyph-l" transform="translate(249.000 64.000) scale(1.576923 2.300000)" data-letter="l" data-role="maek-vowel-left"/>
+    <use href="#glyph-l" transform="translate(374.000 64.000) scale(1.576923 2.300000)" data-letter="l" data-role="maek-vowel-right"/>
+    <use href="#glyph-a" transform="translate(278.000 154.000) scale(0.540000 0.500000)" data-letter="a" data-role="maek-vowel-bridge"/>
+    <use href="#glyph-e" transform="translate(332.000 154.000) scale(0.540000 0.500000)" data-letter="e" data-role="maek-vowel-bridge"/>
+    <use href="#glyph-m" transform="translate(64.000 344.000) scale(0.531818 0.620000)" data-letter="m" data-role="maek-final-top"/>
+    <use href="#glyph-a" transform="translate(133.136 344.000) scale(0.531818 0.620000)" data-letter="a" data-role="maek-final-top"/>
+    <use href="#glyph-e" transform="translate(186.318 344.000) scale(0.531818 0.620000)" data-letter="e" data-role="maek-final-top"/>
+    <use href="#glyph-k" transform="translate(239.500 344.000) scale(0.531818 0.620000)" data-letter="k" data-role="maek-final-top"/>
+    <use href="#glyph-l" transform="translate(294.809 344.000) scale(0.531818 0.620000)" data-letter="l" data-role="maek-final-top"/>
+    <use href="#glyph-o" transform="translate(308.636 344.000) scale(0.531818 0.620000)" data-letter="o" data-role="maek-final-top"/>
+    <use href="#glyph-g" transform="translate(361.818 344.000) scale(0.531818 0.620000)" data-letter="g" data-role="maek-final-top"/>
+    <use href="#glyph-l" transform="translate(374.000 428.320) scale(1.576923 0.606800)" data-letter="l" data-role="maek-final-right"/>
+    <use href="#glyph-l" transform="translate(483.000 64.000) scale(0.840708 0.490000)" data-letter="l" data-role="log-initial-top"/>
+    <use href="#glyph-o" transform="translate(504.858 64.000) scale(0.840708 0.490000)" data-letter="o" data-role="log-initial-top"/>
+    <use href="#glyph-g" transform="translate(588.929 64.000) scale(0.840708 0.490000)" data-letter="g" data-role="log-initial-top"/>
+    <use href="#glyph-l" transform="translate(483.000 145.000) scale(0.840708 0.490000)" data-letter="l" data-role="log-initial-middle"/>
+    <use href="#glyph-o" transform="translate(504.858 145.000) scale(0.840708 0.490000)" data-letter="o" data-role="log-initial-middle"/>
+    <use href="#glyph-g" transform="translate(588.929 145.000) scale(0.840708 0.490000)" data-letter="g" data-role="log-initial-middle"/>
+    <use href="#glyph-l" transform="translate(483.000 226.000) scale(0.840708 0.490000)" data-letter="l" data-role="log-initial-bottom"/>
+    <use href="#glyph-o" transform="translate(504.858 226.000) scale(0.840708 0.490000)" data-letter="o" data-role="log-initial-bottom"/>
+    <use href="#glyph-g" transform="translate(588.929 226.000) scale(0.840708 0.490000)" data-letter="g" data-role="log-initial-bottom"/>
+    <use href="#glyph-l" transform="translate(651.142 113.000) scale(0.840708 0.810000)" data-letter="l" data-role="log-initial-right"/>
+    <use href="#glyph-l" transform="translate(483.000 194.000) scale(0.840708 1.000000)" data-letter="l" data-role="log-initial-left"/>
+    <use href="#glyph-l" transform="translate(708.000 64.000) scale(1.576923 2.300000)" data-letter="l" data-role="log-vowel-upright"/>
+    <use href="#glyph-o" transform="translate(738.000 154.000) scale(0.960000 0.550000)" data-letter="o" data-role="log-vowel-arm"/>
+    <use href="#glyph-m" transform="translate(483.000 344.000) scale(0.531818 0.620000)" data-letter="m" data-role="log-final-top"/>
+    <use href="#glyph-a" transform="translate(552.136 344.000) scale(0.531818 0.620000)" data-letter="a" data-role="log-final-top"/>
+    <use href="#glyph-e" transform="translate(605.318 344.000) scale(0.531818 0.620000)" data-letter="e" data-role="log-final-top"/>
+    <use href="#glyph-k" transform="translate(658.500 344.000) scale(0.531818 0.620000)" data-letter="k" data-role="log-final-top"/>
+    <use href="#glyph-l" transform="translate(713.809 344.000) scale(0.531818 0.620000)" data-letter="l" data-role="log-final-top"/>
+    <use href="#glyph-o" transform="translate(727.636 344.000) scale(0.531818 0.620000)" data-letter="o" data-role="log-final-top"/>
+    <use href="#glyph-g" transform="translate(780.818 344.000) scale(0.531818 0.620000)" data-letter="g" data-role="log-final-top"/>
+    <use href="#glyph-l" transform="translate(793.000 428.320) scale(1.576923 0.606800)" data-letter="l" data-role="log-final-right"/>
+  </g>
+</svg>
