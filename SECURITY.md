@@ -64,4 +64,6 @@ Older dated verification documents describe anonymized history from the original
 
 ## Reporting
 
-A public security reporting contact has not been configured. Do not publish prompts, state directories, hook configuration backups or private terminal captures in an issue. The older bundled synthetic captures are anonymized historical reconstructions, described in [capture provenance](docs/captures/README.md). Current synthetic demo assets state their own provenance in the user documentation.
+Report suspected vulnerabilities through [GitHub's private vulnerability reporting form](https://github.com/reganpark/maeklog/security/advisories/new). Include the affected version, a minimal reproduction and the expected impact. Remove credentials and personal conversation data from reports whenever possible.
+
+Use [GitHub Issues](https://github.com/reganpark/maeklog/issues) for ordinary bugs and platform testing feedback. Do not publish prompts, state directories, hook configuration backups or private terminal captures in an issue. The older bundled synthetic captures are anonymized historical reconstructions, described in [capture provenance](docs/captures/README.md). Current synthetic demo assets state their own provenance in the user documentation.

@@ -10,13 +10,15 @@ The order is: build and link Maeklog → register and trust the four hooks → c
 
 | Requirement | Details |
 | --- | --- |
-| Operating system | Linux and macOS are declared targets. Native validation covers Linux x86_64; macOS has not been verified on real hardware. |
+| Operating system | Native validation covers Linux x86_64. macOS is an experimental target and has not been verified on real hardware. |
 | Herdr | 0.8.2 or later. Run shell commands in a regular shell inside Herdr. |
 | Codex | A signed-in official CLI with hooks enabled. The current integration patch targets 0.162.1. |
-| Build tools | Python 3.11+, Git, GitHub CLI (`gh`), Rust/rustup, `just`, `cargo-nextest`, Node.js/npm, and Bazel or Bazelisk providing a `bazel` command on PATH. Maeklog pins Rust 1.97.1; the integrated Codex build uses its upstream source's toolchain. |
+| Build tools | Python 3.11+, Git, GitHub CLI (`gh`), Rust/rustup, `just`, `cargo-nextest`, Node.js/npm, and Bazel 9.2.0 or Bazelisk providing a `bazel` command on PATH. Maeklog pins Rust 1.97.1; the integrated Codex build uses its upstream source's toolchain. |
 | Terminal | UTF-8 display. Mouse and clipboard features depend on terminal support. |
 
 Allow time and disk space for source builds and dependency downloads. Local linking does not run the build for you.
+
+Codex 0.162.1 pins **Bazel 9.2.0** in its source. Bazelisk can select that version automatically; a fixed `bazel` executable must report the matching version. Preflight checks that Bazel is available, and the source-build step checks its exact version.
 
 Summaries consume **additional model usage**, with **no monetary budget cap**. Records are stored locally, but selected conversations and a limited index of existing records are sent to a model service through Codex. Hiding the panel keeps collection running; choose **Stop recording in this tab** in the menu to stop collection and summaries. See [storage and privacy](#storage-and-privacy).
 
@@ -25,7 +27,7 @@ Summaries consume **additional model usage**, with **no monetary budget cap**. R
 In a **regular Herdr shell**, clone and build the source, link the checkout, then install its collection hooks:
 
 ```sh
-git clone https://github.com/reganpark/maeklog.git
+git clone --branch v0.14.0 --single-branch https://github.com/reganpark/maeklog.git
 cd maeklog
 cargo build --locked --release
 maeklog_root="$PWD"
@@ -34,6 +36,8 @@ herdr plugin action invoke install-codex-hooks --plugin maeklog
 ```
 
 Keep this checkout available after setup: the updater uses its scripts and patches. Keep using the same shell through step 3 so `maeklog_root` remains set. If you return later, set it again to the full path of this actual checkout.
+
+The command above selects the **v0.14.0 public preview**. To work on development changes instead, clone `main` explicitly; its contents may differ from the released version.
 
 The hook action creates the Maeklog hook executable and runtime configuration, and registers four handlers in Codex's `hooks.json`. It backs up existing hook files before changing them and preserves other handlers. It does not grant hook trust.
 
@@ -180,6 +184,7 @@ Click the panel to focus it before using its keys. The menu contains all actions
 | `b` | Select an earlier or held date; `Enter` requests its summary. Opening the selection alone does not call a model. |
 | `s` | Request a draft summary of the current public progress. |
 | `l` / `o` | Correct issue/PR links / open a linked reference. |
+| `v` | Refresh issue and PR information without requesting a summary. |
 | `q` | Hide the panel while collection continues. |
 | Arrow keys, `j`/`k`, mouse wheel | Scroll. |
 

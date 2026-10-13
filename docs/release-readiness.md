@@ -2,9 +2,9 @@
 
 Maeklog is prepared as a source-based Herdr plugin at
 [reganpark/maeklog](https://github.com/reganpark/maeklog). Start with the
-[installation guide](getting-started.md). Installation from the public GitHub
-checkout is to be checked after the initial source push; the evidence below
-covers the local release source and isolated installation.
+[English installation guide](setup.md). Linux verification covers the local
+release source and isolated installation. macOS remains experimental and needs
+real-hardware testing; see the [public preview notes](releases/v0.14.0.md).
 
 ## Supported installation contract
 
@@ -15,13 +15,13 @@ covers the local release source and isolated installation.
 | Python | 3.11 or later; installer tools use standard-library `tomllib` and Unix file locks |
 | Codex client | 0.162.1 is the checked native integration target |
 | Linux | Native installation and lifecycle verified on Linux x86_64 |
-| macOS | Declared in the plugin manifest; native execution and a clean-machine installation have not been verified |
+| macOS | Experimental; declared in the plugin manifest, but native execution and a clean-machine installation have not been verified |
 
 The plugin installation builds Maeklog. Codex collection additionally requires
 explicit installation of the four Maeklog hooks, manual review with Codex `/hooks`,
 and the checked Codex client. The client updater builds from official upstream
 source and downloads matching official helpers. It needs Git, GitHub CLI, Rust,
-`just`, `cargo-nextest`, Node.js/npm, and Bazel or Bazelisk's `bazel` shim. Compiler
+`just`, `cargo-nextest`, Node.js/npm, and Bazel 9.2.0 or Bazelisk's `bazel` shim. Compiler
 and platform libraries must satisfy the selected upstream Codex release. This is
 a substantial source build; no prebuilt Maeklog client download is provided.
 
@@ -94,8 +94,8 @@ patch context and its attribution remain covered by the bundled
 [Codex notice](../integrations/codex/NOTICE-CODEX). Any redistributed client binaries
 must retain the upstream licenses and notices for their complete dependency set.
 
-The repository owner still needs to choose a private security reporting channel;
-see [SECURITY.md](../SECURITY.md). A public repository with a
+Private vulnerability reporting is enabled on GitHub; see
+[SECURITY.md](../SECURITY.md). A public repository with a
 valid root manifest on its default branch can be installed with
 `herdr plugin install reganpark/maeklog`. The optional `herdr-plugin` topic makes it
 eligible for discovery; it is not a review or compatibility certification. See
