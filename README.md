@@ -14,7 +14,8 @@
   <a href="#what-is-maeklog">What it is</a> ·
   <a href="#see-it-in-action">See it in action</a> ·
   <a href="#day-to-day-use">Everyday use</a> ·
-  <a href="docs/setup.md">Setup guide</a>
+  <a href="docs/setup.md">Setup guide</a> ·
+  <a href="docs/setup.ko.md">한국어 설치 가이드</a>
 </p>
 
 ## What is Maeklog?
@@ -81,7 +82,7 @@ Today's completed turns are summarized automatically. `r`, `b` and `s` can reque
 
 Maeklog is currently available as a **manual source build**. Setup includes building the panel, trusting its four Codex hooks, and building a Maeklog-compatible **Codex 0.162.1** client. You will need Herdr 0.8.2 or later and the build tools listed in the guide. Linux x86_64 is validated; macOS is experimental and has not yet been verified on real hardware.
 
-**[Follow the English setup guide →](docs/setup.md)**
+**[Follow the English setup guide →](docs/setup.md)** · **[한국어 설치 가이드 →](docs/setup.ko.md)**
 
 Once installed, use the panel menu to choose the summary model and reasoning effort, set the language to **Auto, English or Korean**, and review or correct issue and PR links. Settings affect future summaries; changing them does not call a model or rewrite existing records. The default summary profile is `gpt-6-luna`, `medium` effort, Standard service. [Configuration and shortcuts](docs/setup.md#configuration).
 
@@ -94,6 +95,7 @@ Storage is not encrypted. Pending conversation text, evidence and diagnostic fil
 ## Documentation
 
 - [English setup, controls and troubleshooting](docs/setup.md)
+- [한국어 설치·설정·문제 해결 가이드](docs/setup.ko.md)
 - [v0.14.0 public preview release notes](docs/releases/v0.14.0.md)
 - [Getting started (Korean)](docs/getting-started.md) · [User guide (Korean)](docs/usage.md)
 - [Codex integration and updates](integrations/codex/README.md)
