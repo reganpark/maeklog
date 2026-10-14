@@ -1,5 +1,7 @@
 # Set up Maeklog from source
 
+[English](setup.md) · [한국어](setup.ko.md)
+
 [← Back to the overview](../README.md)
 
 Maeklog is available as source in [reganpark/maeklog](https://github.com/reganpark/maeklog), with automatic discovery enabled in [Herdr Marketplace](https://herdr.dev/plugins/). The marketplace index refreshes every 30 minutes. This guide describes manual setup from a local checkout; installation still requires the hook approvals and integrated Codex client below.
@@ -35,7 +37,7 @@ herdr plugin link "$maeklog_root"
 herdr plugin action invoke install-codex-hooks --plugin maeklog
 ```
 
-Keep this checkout available after setup: the updater uses its scripts and patches. Keep using the same shell through step 3 so `maeklog_root` remains set. If you return later, set it again to the full path of this actual checkout.
+Keep this checkout available after setup: the updater uses its scripts and patches. Keep using the same shell through step 4 so `maeklog_root` remains set. If you return later, set it again to the full path of this actual checkout.
 
 The command above selects the **v0.14.0 public preview**. To work on development changes instead, clone `main` explicitly; its contents may differ from the released version.
 
@@ -83,7 +85,7 @@ Run in the **regular Herdr shell**:
 python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.162.1 --apply
 ```
 
-The updater downloads the official Codex source and matching helper/resource packages, applies the Maeklog patch, builds, runs validation, then connects the launchers. Validation uses local response fixtures and temporary Herdr windows; it does not call an external model. If prerequisites or validation fail, the updater does not replace the active installation.
+The updater downloads the official Codex source and matching helper/resource packages, applies the Maeklog patch, builds, runs validation, then connects the launchers. Validation uses local response fixtures and a temporary Herdr pane; it does not call an external model. If prerequisites or validation fail, the updater does not replace the active installation.
 
 To build and validate without activating the installation, omit `--apply`. This still downloads, builds and validates:
 
@@ -190,7 +192,7 @@ Click the panel to focus it before using its keys. The menu contains all actions
 
 Completed turns collected today are summarized automatically, newest batch first. Earlier dates, unknown timestamps and turns spanning midnight require selection with `b`. The same work receives at most three automatic attempts before its source is retained for an explicit retry.
 
-Hiding the panel keeps collection running. To stop collection and summaries, use **Stop recording in this tab** in the menu. Reopening the panel or restarting collection processes up to the three most recent collected, completed turns from today; the remainder are held for manual selection with `b`. Other tabs retain their own recording settings. See [dates, retries and collection scope (Korean)](usage.md#언제-자동으로-요약하나요).
+Hiding the panel keeps collection running. To stop collection and summaries, use **Stop recording in this tab** in the menu. Reopening the panel in a tab whose recording was stopped, or restarting collection, processes up to the three most recent collected, completed turns from today; the remainder are held for manual selection with `b`. Other tabs retain their own recording settings. See [dates, retries and collection scope (Korean)](usage.md#언제-자동으로-요약하나요).
 
 ## What records can tell you
 
