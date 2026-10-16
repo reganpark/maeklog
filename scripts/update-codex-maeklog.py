@@ -71,6 +71,32 @@ def bridge_patch(version):
     return max(eligible, key=patch_version)
 
 
+def describe_bridge(version):
+    try:
+        patch = bridge_patch(version)
+    except RuntimeError:
+        print("Maeklog integration: no bridge patch available; this release cannot be installed.")
+        return
+    if installation_current(version):
+        print("Maeklog integration: this exact checked installation is already active.")
+        return
+    patch_version = patch.name.removeprefix("codex-").removesuffix("-maeklog.patch")
+    print(f"Bridge patch: {patch.name}" + (" (older-version fallback)" if patch_version != version else ""))
+    print("Maeklog compatibility is not verified by this release check. "
+          "Source, build and lifecycle checks must pass before installation.")
+
+
+def check_bridge(version, patch, evidence, source):
+    try:
+        step("patch-check: check client bridge compatibility",
+             ["git", "apply", "--check", patch], evidence, source)
+    except RuntimeError as error:
+        raise RuntimeError(
+            f"Maeklog bridge {patch.name} did not pass compatibility checks for Codex {version}. "
+            "A bridge port is required; retrying unchanged will not repair this. "
+            f"The installed CLI has not been changed. {error}") from error
+
+
 def installation_current(version):
     try:
         home = Path.home()
@@ -177,7 +203,7 @@ def update(version, pane, evidence, target, jobs, apply):
           "https://github.com/openai/codex.git", source], evidence)
     commit = output(["git", "rev-parse", "HEAD"], source)
     # Fail on conflicts. Never use git apply --3way or edit the upstream source.
-    step("patch-check: check client bridge compatibility", ["git", "apply", "--check", patch], evidence, source)
+    check_bridge(version, patch, evidence, source)
     step("patch: apply the client bridge", ["git", "apply", patch], evidence, source)
     env = {**os.environ, "CARGO_TARGET_DIR": str(target), "CARGO_BUILD_JOBS": str(jobs),
            "CARGO_PROFILE_DEV_DEBUG": "0", "CARGO_PROFILE_RELEASE_DEBUG": "0"}
@@ -235,7 +261,8 @@ def update(version, pane, evidence, target, jobs, apply):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("version", nargs="?", default="latest")
-    parser.add_argument("--check", action="store_true", help="Show release and installed versions only")
+    parser.add_argument("--check", action="store_true",
+                        help="Show release, installed version and bridge status without building")
     parser.add_argument("--preflight", action="store_true",
                         help="Check local prerequisites and current manual hook approvals; no downloads or build")
     parser.add_argument("--apply", action="store_true", help="Install after all checks pass")
@@ -278,6 +305,7 @@ def main():
     current = output([binary, "--version"]) if binary.exists() else "not installed"
     print(f"Installed integration: {current}; target: {version}", flush=True)
     if args.check:
+        describe_bridge(version)
         return
     if installation_current(version):
         print("The checked integration is already installed; no build needed.")

@@ -88,7 +88,52 @@ class UpdateTests(unittest.TestCase):
                 updater.main()
                 build.assert_not_called()
                 self.assertIn("target: 0.159.3", output.getvalue())
+                self.assertIn("compatibility is not verified", output.getvalue())
                 self.assertEqual(list(Path(directory).iterdir()), [])
+
+    def test_release_check_distinguishes_missing_fallback_and_installed_bridges(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            folder = root / "integrations/codex"
+            folder.mkdir(parents=True)
+            older = folder / "codex-0.162.1-maeklog.patch"
+            with patch.object(updater, "ROOT", root), \
+                 patch.object(updater, "installation_current", return_value=False), \
+                 contextlib.redirect_stdout(io.StringIO()) as printed:
+                updater.describe_bridge("0.163.0")
+                self.assertIn("no bridge patch available", printed.getvalue())
+                printed.seek(0)
+                printed.truncate()
+                older.touch()
+                updater.describe_bridge("0.163.0")
+                self.assertIn("older-version fallback", printed.getvalue())
+                self.assertIn("compatibility is not verified", printed.getvalue())
+                self.assertNotIn("already active", printed.getvalue())
+            with patch.object(updater, "ROOT", root), \
+                 patch.object(updater, "installation_current", return_value=True), \
+                 contextlib.redirect_stdout(io.StringIO()) as printed:
+                updater.describe_bridge("0.162.1")
+                self.assertIn("exact checked installation is already active", printed.getvalue())
+                self.assertNotIn("compatibility is not verified", printed.getvalue())
+
+    def test_real_patch_conflict_explains_the_required_port_and_preserves_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            source.mkdir()
+            original = b"new upstream implementation\n"
+            (source / "client.txt").write_bytes(original)
+            bridge = root / "codex-0.162.1-maeklog.patch"
+            bridge.write_text("diff --git a/client.txt b/client.txt\n"
+                              "--- a/client.txt\n+++ b/client.txt\n"
+                              "@@ -1 +1 @@\n-old upstream implementation\n+bridge\n")
+            with contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaisesRegex(RuntimeError, "retrying unchanged will not repair") as stopped:
+                    updater.check_bridge("0.163.0", bridge, root, source)
+            self.assertIn("installed CLI has not been changed", str(stopped.exception))
+            self.assertIn("patch-check.log", str(stopped.exception))
+            self.assertEqual((source / "client.txt").read_bytes(), original)
+            self.assertIn("patch does not apply", (root / "patch-check.log").read_text())
 
     def test_stable_release_selection_rejects_drafts_prereleases_and_nonrelease_tags(self):
         for release in [{"tag_name": "rust-v0.159.3", "draft": True},
@@ -155,6 +200,8 @@ class UpdateTests(unittest.TestCase):
             with patch.object(updater, "ROOT", root):
                 self.assertEqual(updater.bridge_patch("0.159.4").name, "codex-0.159.3-maeklog.patch")
                 self.assertEqual(updater.bridge_patch("0.159.2").name, "codex-0.159.2-maeklog.patch")
+                (folder / "codex-0.159.4-maeklog.patch").touch()
+                self.assertEqual(updater.bridge_patch("0.159.4").name, "codex-0.159.4-maeklog.patch")
 
     def test_installed_version_checks_launcher_and_binary_independently(self):
         with tempfile.TemporaryDirectory() as directory:

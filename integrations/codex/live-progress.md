@@ -1,6 +1,6 @@
 # Codex TUI live progress bridge
 
-The Codex 0.162.1 patch observes the existing app-server notifications in the terminal client. It sends public progress already produced by Codex to Maeklog without making a model request. Existing `client attach` and `client detach` registration remains in place. Earlier source patches are retained as historical source references.
+The Codex 0.163.0 patch observes the existing app-server notifications in the terminal client. It sends public progress already produced by Codex to Maeklog without making a model request. Existing `client attach` and `client detach` registration remains in place. Earlier source patches are retained as historical source references.
 
 Only the attached primary thread is observed. Child, side-thread and hidden helper streams do not feed this bridge. An explicit `turn/started` opens progress capture; later events must match that turn. The optional upstream `rootTurnId` does not replace the active turn ID or enter the reduced payload. The cwd is frozen from the active terminal session at turn start, rather than inherited from the shared daemon or the hook process.
 
@@ -62,7 +62,7 @@ Run the focused tests from the patched Codex checkout’s `codex-rs` directory:
 just test -p codex-tui -E 'test(herdr_bridge::)'
 ```
 
-For a manual source port, also run `just test -p codex-tui`, then the upstream-required scoped lint/fix and formatting commands. The current patch is generated against official Codex 0.162.1 commit `092d3acd6bec3e3a14bdc7e7a2810ab628ab759d` and excludes local Cargo.lock and snapshot changes. The [historical 0.162.1 installation](../../docs/verification-codex-0.162.1-2026-10-12.md) of the original implementation passed the 7 focused bridge tests (5,719 unrelated tests skipped), scoped lint and a native progress fixture with `--partial-answer`; it did not run the full TUI suite.
+For a manual source port, also run `just test -p codex-tui`, then the upstream-required scoped lint/fix and formatting commands. The current patch is generated against official Codex 0.163.0 commit `83086188ae0614bd882818ff1aa23f3194962012` and excludes local Cargo.lock and snapshot changes. The [historical 0.162.1 installation](../../docs/verification-codex-0.162.1-2026-10-12.md) of the original implementation passed the 7 focused bridge tests (5,719 unrelated tests skipped), scoped lint and a native progress fixture with `--partial-answer`; it did not run the full TUI suite.
 
 Building the source alone does not activate the integration. Follow the
 [installation guide](../../docs/getting-started.md) to review hooks and install a checked client package.

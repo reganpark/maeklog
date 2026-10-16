@@ -1,6 +1,6 @@
 # Primary-turn task reference reports
 
-The supported Codex 0.162.1 source supports `UserPromptSubmit` hook
+The supported Codex 0.163.0 source supports `UserPromptSubmit` hook
 `hookSpecificOutput.additionalContext`. The Maeklog helper uses this official context
 path to ask the current primary coding agent to relay known work references.
 It starts on the next valid user prompt; it does not inject instructions into a

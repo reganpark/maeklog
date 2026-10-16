@@ -11,8 +11,9 @@ UPDATE_HELP = """usage: codex update [VERSION] [--check | --preflight | --apply]
 Build, validate and install the Maeklog Codex integration using maeklog-update.
 VERSION defaults to the latest official stable release. Installation happens
 only after the updater's bridge, lint, installer, routing and live checks pass.
+New upstream releases may require a bridge port before they can be installed.
 
-  --check          Show release and installed versions without building
+  --check          Show release, installed version and bridge status; no build
   --preflight      Check local tools and current manual hook approvals only
   --apply          Install after verification (the default for codex update)
   --pane PANE      Select the calling Herdr pane for the temporary live test

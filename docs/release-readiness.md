@@ -1,5 +1,10 @@
 # Public release readiness — 2026-10-13
 
+The Codex client integration was updated on 2026-10-16 to 0.163.0. See the
+[0.163.0 verification record](verification-codex-0.163.0-2026-10-16.md) for that
+client's checks. The public-plugin verification below remains the original
+2026-10-13 record.
+
 Maeklog is prepared as a source-based Herdr plugin at
 [reganpark/maeklog](https://github.com/reganpark/maeklog). Start with the
 [English installation guide](setup.md). Linux verification covers a fresh clone
@@ -13,7 +18,7 @@ real-hardware testing; see the [public preview notes](releases/v0.14.0.md).
 | Herdr | 0.8.2 or later, as declared by `herdr-plugin.toml` |
 | Maeklog | 0.14.0; built from the pinned lockfile and Rust 1.97.1 toolchain |
 | Python | 3.11 or later; installer tools use standard-library `tomllib` and Unix file locks |
-| Codex client | 0.162.1 is the checked native integration target |
+| Codex client | 0.163.0 is the checked native integration target |
 | Linux | Native installation and lifecycle verified on Linux x86_64 |
 | macOS | Experimental; declared in the plugin manifest, but native execution and a clean-machine installation have not been verified |
 
@@ -28,7 +33,8 @@ a substantial source build; no prebuilt Maeklog client download is provided.
 The updater's `--preflight` checks installed local tools and compares all four
 enabled hook definitions with their current native Codex approval fingerprints.
 It performs no download, build or model request and never writes an approval.
-`--check` reports version information. A version command without `--apply` builds
+`--check` reports versions and bridge/installation status; it does not prove compatibility
+with a new release. A version command without `--apply` builds
 and validates a candidate but leaves the active launchers unchanged. `--apply`
 activates the candidate only after those checks pass.
 
