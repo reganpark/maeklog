@@ -94,7 +94,8 @@ assert 'request' not in ctx and 'body' not in ctx,ctx
 '''
     if step == 1:
         program += '''child=run('context',env={**os.environ,'CODEX_THREAD_ID':'fixture-child-thread'})
-assert child.returncode!=0 and '주 에이전트' in child.stderr,child
+assert child.returncode!=0 and any(message in child.stderr for message in (
+ '주 에이전트', 'Work reports must come from the current primary agent')),child
 print('PM_CHILD_THREAD_REJECTED',flush=True)
 '''
     if step < 3:
@@ -162,8 +163,10 @@ class Model(http.server.BaseHTTPRequestHandler):
                     tools.append(command)
                     payload = {'type': 'custom_tool_call', 'id': f'report-item-{main_calls}',
                                'call_id': f'report-call-{main_calls}', 'name': descriptor['name'],
-                               'input': 'const r = await tools.exec_command(' +
-                               json.dumps({'cmd': command, 'yield_time_ms': 1000}) + '); text(r);'}
+                               'input': 'let r = await tools.exec_command(' +
+                               json.dumps({'cmd': command, 'yield_time_ms': 10000}) + '); '
+                               'while (r.session_id) { r = await tools.write_stdin('
+                               '{session_id: r.session_id, chars: "", yield_time_ms: 1000}); } text(r);'}
                     if namespace:
                         payload['namespace'] = namespace
                     send({'type': 'response.output_item.done', 'item': payload})
@@ -218,7 +221,7 @@ env = {**os.environ, 'CODEX_HOME': str(home), 'MAEKLOG_STATE_DIR': str(state),
        'MAEKLOG_DISABLE_LUNA': '1', 'HERDR_ENV': '1', 'HERDR_SESSION': 'task-native-fixture',
        'HERDR_SOCKET_PATH': '/task-native-fixture/fake.sock', 'HERDR_WORKSPACE_ID': 'fixture',
        'HERDR_TAB_ID': 'fixture:t1', 'HERDR_PANE_ID': 'fixture:p1',
-       'HERDR_BIN_PATH': str(plugin / 'scripts/mock-live-herdr.mjs'),
+       'HERDR_BIN_PATH': str(plugin / 'scripts/mock-live-herdr.py'),
        'PM_CLIENT_TOPOLOGY': str(topology), 'TERM': 'xterm-256color'}
 for key in ['MAEKLOG_INTERNAL', 'OPENAI_API_KEY', 'OPENAI_BASE_URL', 'CODEX_THREAD_ID', 'CODEX_SESSION_ID']:
     env.pop(key, None)

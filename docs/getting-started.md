@@ -9,18 +9,20 @@ Maeklog는 Herdr 안에서 Codex 대화를 탭별로 정리하는 플러그인�
 ## 준비물과 사용량
 
 - Linux x86_64, Herdr 0.8.2 이상. macOS는 실험적 지원 대상으로, 실기 검증은 아직 진행하지 않았습니다.
-- 로그인한 공식 Codex CLI. 통합 패치의 기준 버전은 0.162.1입니다.
-- Python 3.11 이상, Git, GitHub CLI(`gh`), Rust/rustup, `just`, `cargo-nextest`, Node.js/npm, Bazel 9.2.0 또는 Bazelisk. `bazel` 명령이 PATH에서 실행돼야 합니다. Codex 0.162.1은 Bazel 9.2.0을 요구하며, Bazelisk는 소스에 지정된 버전을 선택할 수 있습니다.
+- 로그인한 공식 Codex CLI. 통합 패치의 기준 버전은 0.163.0입니다.
+- Python 3.11 이상, Git, GitHub CLI(`gh`), Rust/rustup, `just`, `cargo-nextest`, Node.js/npm, Bazel 9.2.0 또는 Bazelisk. `bazel` 명령이 PATH에서 실행돼야 합니다. Codex 0.163.0은 Bazel 9.2.0을 요구하며, Bazelisk는 소스에 지정된 버전을 선택할 수 있습니다.
 - Maeklog의 [Rust toolchain](../rust-toolchain.toml)은 1.97.1로 고정돼 있습니다. 통합 Codex는 내려받은 upstream 소스의 toolchain을 사용합니다. 소스 빌드와 의존성 다운로드에 필요한 시간과 디스크 공간을 확보하세요.
 
 요약에는 **추가 모델 사용량**이 발생하며 금액 기준 예산 상한은 없습니다. 수집한 기록은 로컬에 저장하고, 요약할 때 대화와 일부 기존 기록을 모델 서비스에 전송합니다. 새 탭의 수집은 기본으로 켜져 있으며 자동 요약은 오늘 수집된 완료 대화로 제한됩니다. 수집을 중지하려면 패널 메뉴의 **이 탭 수집 끄기**를 사용하세요. [저장·삭제와 사용 범위](usage.md#모델-사용량과-저장)를 먼저 확인해도 좋습니다.
 
 ## 1. Herdr 안에서 플러그인 설치하기
 
+Codex 0.163.0 연동은 `main` 소스를 사용합니다. v0.14.0 공개 프리뷰 태그에는 이전 Codex 0.162.1 연동이 포함되어 있습니다.
+
 Herdr를 실행하고 그 안의 터미널에서 입력합니다.
 
 ```sh
-herdr plugin install reganpark/maeklog --ref v0.14.0
+herdr plugin install reganpark/maeklog --ref main
 herdr plugin list --plugin maeklog --json
 ```
 
@@ -83,14 +85,14 @@ python3 "$maeklog_root/scripts/update-codex-maeklog.py" --preflight
 
 이 확인은 다운로드·빌드·외부 모델 호출을 하지 않습니다. 필수 명령, Herdr 호출 위치, 설치된 Maeklog 실행 설정·훅, hooks 활성화, 네 핸들러의 현재 정의와 수동 신뢰 상태를 확인합니다.
 
-오류가 있으면 표시된 항목부터 해결하고 다시 실행합니다. `--check`는 버전 정보만 보는 옵션이며 이 준비 상태 확인을 대신하지 않습니다.
+오류가 있으면 표시된 항목부터 해결하고 다시 실행합니다. `--check`는 버전과 bridge·설치 상태를 표시하며 이 준비 상태 확인을 대신하지 않습니다.
 
 `XDG_CONFIG_HOME`이나 `CODEX_HOME`을 바꿔 쓰는 경우 훅 등록·신뢰·업데이트·Codex 실행에 같은 환경을 유지해야 합니다. 별도 `HERDR_PLUGIN_CONFIG_DIR`가 기본 브릿지 경로인 `$XDG_CONFIG_HOME/herdr/plugins/config/maeklog` 밖을 가리키는 구성은 이 설치 흐름에서 지원하지 않으며 준비 확인에서 중단합니다. XDG 설정이 없으면 기본 경로는 `~/.config/herdr/plugins/config/maeklog`입니다.
 
 ## 4. Maeklog용 Codex 빌드와 연결하기
 
 ```sh
-python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.162.1 --apply
+python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.163.0 --apply
 ```
 
 이 명령은 공식 Codex 소스와 일치하는 helper/resource 패키지를 내려받아 Maeklog 패치를 적용하고 빌드합니다. 로컬 응답 fixture로 연결·수명 주기를 확인한 뒤 설치를 활성화합니다. 검증용 임시 Herdr 창을 만들고 닫으며 외부 모델을 호출하지 않습니다. 준비나 검증이 실패하면 활성 설치를 교체하지 않습니다.
@@ -98,7 +100,7 @@ python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.162.1 --apply
 설치 계획까지만 보려면 같은 명령에서 `--apply`를 생략합니다. 생략해도 다운로드·빌드·검증은 진행합니다.
 
 ```sh
-python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.162.1
+python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.163.0
 ```
 
 활성화할 때 기존 실행 파일·런처와 설정을 백업합니다. 이전 Herdr 서버 측 `SessionStart` 핸들러가 있으면 확인된 해당 핸들러의 enabled 상태만 끄고, Maeklog의 터미널 클라이언트 보고를 사용합니다. 이미 실행 중인 Codex와 공유 서버는 재시작하지 않습니다.
@@ -118,7 +120,7 @@ codex --version
 codex-maeklog --version
 ```
 
-`codex`와 `codex-maeklog`의 경로는 각각 `~/.local/bin/codex`, `~/.local/bin/codex-maeklog`이며 두 버전 출력은 `codex-cli 0.162.1`이어야 합니다. 셸이 이전 실행 파일 경로를 기억하면 새 터미널을 열거나 해당 셸의 명령 캐시를 새로고침하세요. 버전만 같다고 패치된 빌드라고 판단하지 말고 준비 확인과 런처 경로도 함께 확인합니다.
+`codex`와 `codex-maeklog`의 경로는 각각 `~/.local/bin/codex`, `~/.local/bin/codex-maeklog`이며 두 버전 출력은 `codex-cli 0.163.0`이어야 합니다. 셸이 이전 실행 파일 경로를 기억하면 새 터미널을 열거나 해당 셸의 명령 캐시를 새로고침하세요. 버전만 같다고 패치된 빌드라고 판단하지 말고 준비 확인과 런처 경로도 함께 확인합니다.
 
 `codex-maeklog`는 패키지 경로·버전 확인용 포인터입니다. 대화형 작업은 설치된 `codex` 런처로 실행하세요. PATH가 다른 명령을 선택하면 `~/.local/bin/codex`를 직접 실행할 수 있습니다. 그 파일 자체가 덮였다면 같은 설치된 런처 스크립트를 다음처럼 실행합니다.
 
@@ -176,11 +178,11 @@ herdr server reload-config
 
 ## 업데이트
 
-Herdr 터미널에서 버전을 확인하고 업데이트합니다.
+먼저 [소스 업데이트 안내](../integrations/codex/README.md#routine-updates)에 따라 실제 Maeklog 설치 소스를 갱신한 뒤 Herdr 터미널에서 버전을 확인하고 업데이트합니다. `codex update`는 Maeklog 소스 자체를 갱신하지 않습니다.
 
 ```sh
-codex update --check
-codex update 0.162.1
+codex update 0.163.0 --check
+codex update 0.163.0
 ```
 
 `codex update`는 Maeklog의 검증된 업데이트 흐름을 실행합니다. 새 upstream 버전에 패치가 맞지 않거나 검증이 실패하면 설치를 멈추므로 [Codex 통합 안내](../integrations/codex/README.md)를 확인하세요. 일반 npm 업데이트는 이 통합을 업데이트하지 않으며 `codex` 런처 경로를 바꿀 수 있습니다.

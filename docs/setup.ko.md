@@ -14,13 +14,13 @@ Maeklog 소스는 [reganpark/maeklog](https://github.com/reganpark/maeklog)에�
 | --- | --- |
 | 운영체제 | 실제 실행 검증 범위는 Linux x86_64입니다. macOS는 실험적 지원 대상이며, 실제 하드웨어에서는 아직 검증하지 않았습니다. |
 | Herdr | 0.8.2 이상. 셸 명령은 Herdr 안의 일반 셸에서 실행합니다. |
-| Codex | 로그인한 공식 CLI와 활성화된 hooks 기능이 필요합니다. 현재 통합 패치의 대상 버전은 0.162.1입니다. |
+| Codex | 로그인한 공식 CLI와 활성화된 hooks 기능이 필요합니다. 현재 통합 패치의 대상 버전은 0.163.0입니다. |
 | 빌드 도구 | Python 3.11 이상, Git, GitHub CLI(`gh`), Rust/rustup, `just`, `cargo-nextest`, Node.js/npm, Bazel 9.2.0 또는 Bazelisk가 필요합니다. `bazel` 명령이 PATH에서 실행되어야 합니다. Maeklog는 Rust 1.97.1로 고정되어 있고, 통합 Codex 빌드는 내려받은 원본 소스의 toolchain을 사용합니다. |
 | 터미널 | UTF-8 표시가 필요합니다. 마우스와 클립보드 기능은 터미널의 지원 여부에 따라 달라집니다. |
 
 소스 빌드와 의존성 다운로드에 필요한 시간과 디스크 공간을 확보하세요. 로컬 소스를 연결하는 `link` 명령은 빌드를 실행하지 않습니다.
 
-Codex 0.162.1 소스는 **Bazel 9.2.0**을 지정합니다. Bazelisk는 이 버전을 자동으로 선택할 수 있으며, 고정 버전의 `bazel` 실행 파일은 같은 버전을 표시해야 합니다. 준비 상태 확인에서는 Bazel 실행 가능 여부를, 소스 빌드 단계에서는 정확한 버전을 확인합니다.
+Codex 0.163.0 소스는 **Bazel 9.2.0**을 지정합니다. Bazelisk는 이 버전을 자동으로 선택할 수 있으며, 고정 버전의 `bazel` 실행 파일은 같은 버전을 표시해야 합니다. 준비 상태 확인에서는 Bazel 실행 가능 여부를, 소스 빌드 단계에서는 정확한 버전을 확인합니다.
 
 요약에는 **추가 모델 사용량**이 발생하며, **금액 기준 예산 상한은 없습니다**. 기록은 로컬에 저장하지만 요약 대상 대화와 제한된 기존 기록 색인을 Codex를 통해 모델 서비스로 전송합니다. 패널을 숨겨도 수집은 계속됩니다. 수집과 요약을 중지하려면 메뉴의 **이 탭 수집 끄기**를 선택하세요. [저장과 개인정보](#저장과-개인정보)에서 자세히 설명합니다.
 
@@ -29,7 +29,7 @@ Codex 0.162.1 소스는 **Bazel 9.2.0**을 지정합니다. Bazelisk는 이 버�
 **Herdr 일반 셸**에서 소스를 복제하고 빌드한 뒤, 소스 디렉터리를 연결하고 수집 훅을 설치합니다.
 
 ```sh
-git clone --branch v0.14.0 --single-branch https://github.com/reganpark/maeklog.git
+git clone --branch main --single-branch https://github.com/reganpark/maeklog.git
 cd maeklog
 cargo build --locked --release
 maeklog_root="$PWD"
@@ -39,7 +39,7 @@ herdr plugin action invoke install-codex-hooks --plugin maeklog
 
 업데이트 도구가 이 소스의 스크립트와 패치를 사용하므로 설치 후에도 소스 디렉터리를 유지하세요. `maeklog_root`가 유지되도록 4단계까지 같은 셸을 사용합니다. 나중에 다시 진행한다면 실제 소스 디렉터리의 절대 경로로 이 변수를 다시 설정하세요.
 
-위 명령은 **v0.14.0 공개 프리뷰**를 선택합니다. 개발 중인 변경 사항을 작업하려면 `main`을 명시적으로 복제하세요. 릴리스 버전과 내용이 다를 수 있습니다.
+위 명령은 Codex 0.163.0 연동이 포함된 `main`을 선택합니다. **v0.14.0 공개 프리뷰** 태그에는 이전 Codex 0.162.1 연동이 포함되어 있습니다.
 
 훅 설치 동작은 Maeklog 훅 실행 파일과 실행 설정을 만들고, Codex의 `hooks.json`에 핸들러 네 개를 등록합니다. 기존 훅 파일을 변경 전에 백업하고 다른 핸들러는 보존합니다. 훅 신뢰는 부여하지 않습니다.
 
@@ -73,7 +73,7 @@ Codex 입력 화면을 나와 앞에서 사용한 **Herdr 일반 셸**로 돌아
 python3 "$maeklog_root/scripts/update-codex-maeklog.py" --preflight
 ```
 
-`--preflight`는 필수 명령, Herdr 실행 환경, 설치된 실행 설정과 훅, hooks 활성화, 현재 핸들러 정의 네 개의 수동 신뢰 상태를 확인합니다. 다운로드·빌드·모델 호출은 하지 않습니다. 오류를 해결한 뒤 다시 실행하세요. `--check`는 버전 정보만 확인하므로 이 준비 상태 확인을 대신하지 않습니다.
+`--preflight`는 필수 명령, Herdr 실행 환경, 설치된 실행 설정과 훅, hooks 활성화, 현재 핸들러 정의 네 개의 수동 신뢰 상태를 확인합니다. 다운로드·빌드·모델 호출은 하지 않습니다. 오류를 해결한 뒤 다시 실행하세요. `--check`는 버전과 bridge·설치 상태를 표시하며 이 준비 상태 확인을 대신하지 않습니다.
 
 `XDG_CONFIG_HOME`이나 `CODEX_HOME`을 바꿔 쓴다면 훅 설치·신뢰·업데이트·Codex 실행에 같은 환경을 유지하세요. 별도 `HERDR_PLUGIN_CONFIG_DIR`가 브릿지 경로인 `$XDG_CONFIG_HOME/herdr/plugins/config/maeklog` 밖을 가리키는 구성은 이 설치 흐름에서 지원하지 않습니다. 경로를 추측하지 않고 준비 상태 확인에서 중단합니다. XDG 설정이 없으면 기본 경로는 `~/.config/herdr/plugins/config/maeklog`입니다.
 
@@ -82,7 +82,7 @@ python3 "$maeklog_root/scripts/update-codex-maeklog.py" --preflight
 **Herdr 일반 셸**에서 실행합니다.
 
 ```sh
-python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.162.1 --apply
+python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.163.0 --apply
 ```
 
 업데이트 도구는 공식 Codex 소스와 버전이 일치하는 helper/resource 패키지를 내려받고, Maeklog 패치를 적용해 빌드·검증한 뒤 런처를 연결합니다. 검증은 로컬 응답 fixture와 임시 Herdr 분할 창(pane)을 사용하며 외부 모델을 호출하지 않습니다. 준비 상태 확인이나 검증이 실패하면 활성 설치를 교체하지 않습니다.
@@ -90,7 +90,7 @@ python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.162.1 --apply
 설치를 활성화하지 않고 빌드·검증만 하려면 `--apply`를 생략하세요. 생략해도 다운로드·빌드·검증은 진행합니다.
 
 ```sh
-python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.162.1
+python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.163.0
 ```
 
 활성화할 때 기존 실행 파일·런처·설정을 백업합니다. 이전 Herdr 서버 측 `SessionStart` 핸들러가 있다면 확인된 해당 핸들러만 비활성화하고 Maeklog 터미널 클라이언트의 보고를 사용합니다. 실행 중인 Codex 프로세스나 공유 Herdr 서버는 재시작하지 않습니다.
@@ -107,7 +107,7 @@ codex --version
 codex-maeklog --version
 ```
 
-경로는 각각 `~/.local/bin/codex`, `~/.local/bin/codex-maeklog`이며, 두 버전 출력은 `codex-cli 0.162.1`이어야 합니다. 공식 CLI도 같은 버전을 표시하므로 경로, 준비 상태 확인 결과, 아래의 첫 대화까지 함께 확인하세요.
+경로는 각각 `~/.local/bin/codex`, `~/.local/bin/codex-maeklog`이며, 두 버전 출력은 `codex-cli 0.163.0`이어야 합니다. 공식 CLI도 같은 버전을 표시하므로 경로, 준비 상태 확인 결과, 아래의 첫 대화까지 함께 확인하세요.
 
 PATH 변경은 현재 셸에 적용됩니다. 계속 사용하려면 셸 시작 파일에 같은 `export` 줄을 추가하세요. Bash는 `~/.bashrc`, Zsh는 `~/.zshrc`를 사용하며, 로그인 셸 등 별도 구성이 있다면 그 설정을 따릅니다. 셸이 이전 실행 파일을 기억한다면 새 터미널을 열거나 명령 캐시를 새로고침하세요.
 
@@ -216,14 +216,14 @@ Maeklog는 수집한 Codex 대화를 정리해 작업 맥락을 다시 파악하
 
 ## 업데이트
 
-Herdr 일반 셸에서 실행합니다.
+먼저 [소스 업데이트 안내](../integrations/codex/README.md#routine-updates)에 따라 유지해 둔 Maeklog 소스를 갱신하세요. v0.14.0 태그에 고정된 checkout도 이 과정이 필요합니다. `codex update`는 해당 소스의 패치를 사용하며 Maeklog 소스를 내려받지는 않습니다. 그다음 Herdr 일반 셸에서 실행합니다.
 
 ```sh
-codex update --check
-codex update 0.162.1
+codex update 0.163.0 --check
+codex update 0.163.0
 ```
 
-`codex update`는 Maeklog의 검증된 업데이트 흐름을 사용합니다. 패치가 새 원본 소스와 맞지 않거나 검증이 실패하면 설치를 중단합니다. 일반 npm 업데이트는 이 통합을 업데이트하지 않으며 실행할 `codex` 런처가 바뀔 수 있습니다. 소스 디렉터리를 유지하고 [Codex 통합·업데이트 가이드](../integrations/codex/README.md)를 확인하세요.
+버전 인자가 없는 `codex update`는 최신 공식 안정 릴리스를 대상으로 Maeklog 연동을 빌드·검증합니다. `--check`에서 새 버전이 보이더라도 연동 호환성이 확인된 것은 아닙니다. 이전 버전 패치를 재사용하는 경우도 출력하며, 원본 소스와 충돌하면 패치를 새 버전에 맞게 이식해야 합니다. 같은 명령을 반복해도 이 충돌은 해결되지 않습니다. 검증에 실패하면 기존 설치를 유지합니다. 일반 npm 업데이트는 이 통합을 업데이트하지 않으며 실행할 `codex` 런처가 바뀔 수 있습니다. 소스 디렉터리를 유지하고 [Codex 통합·업데이트 가이드](../integrations/codex/README.md)를 확인하세요.
 
 ## 문제 해결
 

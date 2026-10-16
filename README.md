@@ -80,7 +80,7 @@ Today's completed turns are summarized automatically. `r`, `b` and `s` can reque
 
 ## Setup and configuration
 
-Maeklog is currently available as a **manual source build**. Setup includes building the panel, trusting its four Codex hooks, and building a Maeklog-compatible **Codex 0.162.1** client. You will need Herdr 0.8.2 or later and the build tools listed in the guide. Linux x86_64 is validated; macOS is experimental and has not yet been verified on real hardware.
+Maeklog is currently available as a **manual source build**. Setup includes building the panel, trusting its four Codex hooks, and building a Maeklog-compatible **Codex 0.163.0** client using Maeklog's `main` source. You will need Herdr 0.8.2 or later and the build tools listed in the guide. Linux x86_64 is validated; macOS is experimental and has not yet been verified on real hardware.
 
 **[Follow the English setup guide →](docs/setup.md)** · **[한국어 설치 가이드 →](docs/setup.ko.md)**
 
