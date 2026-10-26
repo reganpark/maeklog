@@ -75,6 +75,8 @@ for(const mode of ['incremental','latest']) {
     put('rebuild.json',{session_id:'excluded-session',requested_at_unix:1});
     unlinkSync(join(gate,'fixture'));
     action('open'); // prefix+m explicitly reactivates; no full historical catch-up.
+    const resizes=()=>jsonLines(join(root,'herdr-calls.jsonl')).filter(args=>args[0]==='pane'&&args[1]==='resize');
+    assert.deepEqual(resizes(),[['pane','resize','--pane','fixture:main','--direction','right','--amount','0.13']]);
     const restartedThrough=count;
     const processed=()=>new Set(get('selected-current.json').done);
     assert.equal(get('participation.json').enabled,true);
@@ -90,6 +92,7 @@ for(const mode of ['incremental','latest']) {
     assert.equal(afterRestart.at(-1).seq.length,Math.min(count,6));
     assert.equal(jsonLines(env.PM_TEST_EVIDENCE).at(-1).previous.objective,'','old brief reached restart prompt');
     action('open'); // Already enabled: opening again does not reseed or consume extra tokens.
+    assert.equal(resizes().length,1,'opening an existing panel must preserve its adjusted width');
     assert.notEqual(run(['action','rebuild']).status,0,'full transcript rebuild bypassed opt-out');
     action('hide'); // Hiding is NOT opt-out.
     assert.equal(get('participation.json').enabled,true);

@@ -254,7 +254,7 @@ pub fn open_context_pane(target_pane: &str, focus: bool) -> AppResult<String> {
     ];
     arguments.push(if focus { "--focus" } else { "--no-focus" });
     let value = call(&arguments)?;
-    value
+    let pane_id = value
         .pointer("/result/pane/pane_id")
         .and_then(Value::as_str)
         .or_else(|| {
@@ -263,7 +263,23 @@ pub fn open_context_pane(target_pane: &str, focus: bool) -> AppResult<String> {
                 .and_then(|result| find_string_key(result, "pane_id"))
         })
         .map(ToOwned::to_owned)
-        .ok_or_else(|| "Herdr did not return a pane id".into())
+        .ok_or("Herdr did not return a pane id")?;
+    // Plugin splits start at 50:50; Herdr's plugin API has no ratio option.
+    // Adjust only this new split, leaving restored/manually resized panes alone.
+    // Keep the created pane registered even if the optional resize fails.
+    if let Err(error) = call(&[
+        "pane",
+        "resize",
+        "--pane",
+        target_pane,
+        "--direction",
+        "right",
+        "--amount",
+        "0.13",
+    ]) {
+        eprintln!("Maeklog opened, but its initial split could not be resized: {error}");
+    }
+    Ok(pane_id)
 }
 
 pub fn close_plugin_pane(pane_id: &str) -> AppResult<()> {
