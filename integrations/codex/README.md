@@ -1,6 +1,6 @@
 # Codex terminal client → Herdr → Maeklog
 
-Maeklog uses a local Codex TUI patch to identify the terminal/tab that owns a conversation and to display public progress. The current patch is based on `openai/codex` tag `rust-v0.163.0`, commit `83086188ae0614bd882818ff1aa23f3194962012`.
+Maeklog uses a local Codex TUI patch to identify the terminal/tab that owns a conversation and to display public progress. The current patch is based on `openai/codex` tag `rust-v0.164.0`, commit `6aaac694803004a63c6f393d153c96d22521a6b9`.
 
 Start with the [English installation guide](../../docs/setup.md) for plugin installation, the four collection hooks, manual `/hooks` review and trust, preflight, the checked Codex build, and a first conversation. A new installation uses Maeklog's own namespace. It does not discover or import another plugin's configuration or records.
 
@@ -32,10 +32,10 @@ Use the plugin root obtained in the installation guide:
 
 ```sh
 python3 "$maeklog_root/scripts/update-codex-maeklog.py" --preflight
-python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.163.0 --apply
+python3 "$maeklog_root/scripts/update-codex-maeklog.py" 0.164.0 --apply
 ```
 
-`--preflight` checks required tools, the Herdr caller, installed Maeklog runtime/helper, hooks feature state, all four handler definitions, and their current manual enabled/trusted state. It performs no downloads, builds or model calls. Python 3.11+, Git, `gh`, Rust/rustup, `just`, `cargo-nextest`, Node/npm, Herdr, and a usable `bazel` command are required. The Codex 0.163.0 source build requires Bazel 9.2.0; use that version directly or let Bazelisk select it from the source's `.bazelversion`.
+`--preflight` checks required tools, the Herdr caller, installed Maeklog runtime/helper, hooks feature state, all four handler definitions, and their current manual enabled/trusted state. It performs no downloads, builds or model calls. Python 3.11+, Git, `gh`, Rust/rustup, `just`, `cargo-nextest`, Node/npm, Herdr, and a usable `bazel` command are required. The Codex 0.164.0 source build requires Bazel 9.2.0; use that version directly or let Bazelisk select it from the source's `.bazelversion`.
 
 Without `--apply`, a version request still downloads, builds and runs validation, then reports an installation plan. `--check` reports versions and bridge/installation status; it is not a trust check.
 
@@ -60,8 +60,8 @@ Continue only if the output is empty; save any local changes before proceeding. 
 ```sh
 git -C "$maeklog_root" fetch origin main &&
   git -C "$maeklog_root" switch --detach --no-overwrite-ignore FETCH_HEAD &&
-  codex update 0.163.0 --check &&
-  codex update 0.163.0
+  codex update 0.164.0 --check &&
+  codex update 0.164.0
 codex update --help
 codex --version
 ```
@@ -85,14 +85,14 @@ python3 "$maeklog_root/scripts/install-client-routing.py" --launcher-only --appl
 
 ## Manual port and focused checks
 
-The current source patch is [codex-0.163.0-maeklog.patch](codex-0.163.0-maeklog.patch). Earlier 0.157.1, 0.159.2, 0.159.3, 0.160.0 and 0.162.1 patches are historical source references, not promises of current installation support.
+The current source patch is [codex-0.164.0-maeklog.patch](codex-0.164.0-maeklog.patch). Earlier 0.157.1, 0.159.2, 0.159.3, 0.160.0, 0.162.1 and 0.163.0 patches are historical source references, not promises of current installation support.
 
 For a manual port in a separate checkout:
 
 ```sh
-git clone --depth 1 --branch rust-v0.163.0 https://github.com/openai/codex.git codex-maeklog
+git clone --depth 1 --branch rust-v0.164.0 https://github.com/openai/codex.git codex-maeklog
 cd codex-maeklog
-git apply "$maeklog_root/integrations/codex/codex-0.163.0-maeklog.patch"
+git apply "$maeklog_root/integrations/codex/codex-0.164.0-maeklog.patch"
 cd codex-rs
 cargo fetch
 just fmt
@@ -103,7 +103,7 @@ just fmt
 CARGO_PROFILE_RELEASE_DEBUG=0 CARGO_BUILD_JOBS=4 cargo rustc --locked --release -p codex-cli --bin codex -- -C lto=off
 ```
 
-The published tag has workspace version 0.163.0 while workspace package versions in `Cargo.lock` can still say `0.0.0`. `cargo fetch` normalizes these; the updater checks that external dependency versions and the graph remain unchanged. Synchronize Bazel metadata with `just bazel-lock-update` when the Cargo lock changes. Build the matching debug CLI before running the full TUI suite, which invokes a real CLI in some tests.
+The published tag has workspace version 0.164.0 while workspace package versions in `Cargo.lock` can still say `0.0.0`. `cargo fetch` normalizes these; the updater checks that external dependency versions and the graph remain unchanged. Synchronize Bazel metadata with `just bazel-lock-update` when the Cargo lock changes. Build the matching debug CLI before running the full TUI suite, which invokes a real CLI in some tests.
 
 The repository's mock-home checks are:
 
@@ -124,7 +124,7 @@ python3 scripts/test-codex-client-live.py \
   --default-bridge
 ```
 
-The [0.163.0 verification record](../../docs/verification-codex-0.163.0-2026-10-16.md) covers the current Linux source port, native checks and installed update command. The [dated 0.162.1 record](../../docs/verification-codex-0.162.1-2026-10-12.md) preserves anonymized historical results from the original implementation; it does not by itself verify a renamed Maeklog build or a new installation.
+The [0.164.0 verification record](../../docs/verification-codex-0.164.0-2026-10-26.md) covers the current Linux candidate build, bridge tests and native lifecycle/progress checks without activating the candidate. The [0.163.0 verification record](../../docs/verification-codex-0.163.0-2026-10-16.md) preserves the earlier installed-update verification. The [dated 0.162.1 record](../../docs/verification-codex-0.162.1-2026-10-12.md) preserves anonymized historical results from the original implementation; it does not by itself verify a renamed Maeklog build or a new installation.
 
 ## Guarantees and limits
 
