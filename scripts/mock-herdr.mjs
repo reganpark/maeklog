@@ -16,6 +16,18 @@ else if(args[0]==='pane'&&args[1]==='list') result={panes:[main,...(existsSync(m
 else if(args[0]==='pane'&&args[1]==='get'&&args[2]===panel.pane_id&&existsSync(marker)) result={pane:panel};
 else if(args[0]==='pane'&&args[1]==='process-info') result={process_info:{shell_pid:10,foreground_processes:[{pid:11,name:'maeklog',argv:[process.env.PM_TEST_BINARY,'panel']}]}};
 else if(args[0]==='pane'&&args[1]==='input') result={};
+else if(args[0]==='pane'&&args[1]==='resize') {
+  if(process.env.PM_TEST_RESIZE==='error') {
+    console.error('fixture resize failed');
+    process.exit(1);
+  }
+  if(process.env.PM_TEST_RESIZE==='timeout') {
+    writeFileSync(join(root,'resize-pid'),String(process.pid));
+    await new Promise(resolve=>setTimeout(resolve,60000));
+    throw new Error('fixture resize outlived the Herdr command timeout');
+  }
+  result={};
+}
 else if(args[0]==='pane'&&args[1]==='close'&&args[2]===panel.pane_id) {unlinkSync(marker);result={};}
 else if(args.slice(0,3).join(' ')==='plugin pane open') {writeFileSync(marker,'fixture');result={pane:panel};}
 else throw new Error('Unexpected fixture Herdr call: '+JSON.stringify(args));

@@ -225,7 +225,7 @@ new file mode 100644
 index 0000000..0f461c3
 --- /dev/null
 +++ b/codex-rs/tui/src/herdr_bridge_live.rs
-@@ -0,0 +1,319 @@
+@@ -0,0 +1,316 @@
 +//! Bounded public notification projection and best-effort local background delivery.
 +use codex_app_server_protocol::PatchChangeKind;
 +use codex_app_server_protocol::ServerNotification;
@@ -447,12 +447,9 @@ index 0000000..0f461c3
 +            json!({"type": "agentMessage", "text": bounded(text, /*limit*/ 4000), "phase": phase})
 +        }
 +        ThreadItem::CommandExecution {
-+            command,
-+            status,
-+            exit_code,
-+            ..
++            status, exit_code, ..
 +        } => {
-+            json!({"type": "commandExecution", "command": bounded(command, /*limit*/ 300), "status": status, "exitCode": exit_code})
++            json!({"type": "commandExecution", "status": status, "exitCode": exit_code})
 +        }
 +        ThreadItem::McpToolCall {
 +            server,
@@ -592,7 +589,7 @@ index 0000000..a241ec4
 +#[test]
 +fn projects_only_public_item_metadata_and_completed_reports() {
 +    let inputs = [
-+        json!({"id": "command", "type": "commandExecution", "command": "cargo check", "cwd": "/repo",
++        json!({"id": "command", "type": "commandExecution", "command": "TOKEN=SECRET curl -H \"Authorization: Bearer SECRET\" --password SECRET", "cwd": "/repo",
 +            "status": "completed", "commandActions": [], "exitCode": 1, "aggregatedOutput": "SECRET"}),
 +        json!({"id": "mcp", "type": "mcpToolCall", "server": "files", "tool": "read", "status": "completed",
 +            "arguments": {"password": "SECRET"}, "result": {"content": [{"type": "text", "text": "SECRET"}]}}),
@@ -615,7 +612,7 @@ index 0000000..a241ec4
 +            .filter_map(|item| public_item(item, "item/completed"))
 +            .collect::<Vec<_>>(),
 +        vec![
-+            json!({"id": "command", "type": "commandExecution", "command": "cargo check", "status": "completed", "exitCode": 1}),
++            json!({"id": "command", "type": "commandExecution", "status": "completed", "exitCode": 1}),
 +            json!({"id": "mcp", "type": "mcpToolCall", "server": "files", "tool": "read", "status": "completed"}),
 +            json!({"id": "dynamic", "type": "dynamicToolCall", "tool": "query", "status": "completed"}),
 +            json!({"id": "file", "type": "fileChange", "status": "completed", "changes": [{"path": "src/main.rs", "kind": {"type": "update"}}]}),

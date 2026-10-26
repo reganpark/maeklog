@@ -16,6 +16,7 @@ Older dated verification documents describe anonymized history from the original
 - The checked client installer backs up replaced launchers and configuration, preserves unrelated hook definitions and trusted hashes, and disables only an unambiguous generated Herdr SessionStart handler. Multiple or ambiguous Herdr handlers require review before installation. A fresh home may have no such handler or local Codex launcher.
 - The selected summary-model process is ephemeral, read-only, schema constrained, time limited, and launched with user configuration and hooks disabled.
 - State directories are `0700`; state files and backups are `0600`.
+- Live command progress excludes the entire command string, including arguments, environment assignments and executable paths. The receiver ignores that field from older clients too. This does not redact secrets repeated in user prompts or assistant prose, or erase previously collected records.
 - HTTP Git remotes have embedded user information removed before model input.
 - Raw completed inbox payloads are deleted after a successful cumulative commit. Short exact evidence quotes and Space/session/context provenance remain in the shared branch journal until explicit scoped deletion.
 - v0.12 does not automatically import Codex transcripts on first open/focus/session connection or reactivation. Legacy bounded importers remain compatibility test code. Only collected complete turns wholly within today's local date are automatic; previous/unknown/cross-day input requires explicit date selection.

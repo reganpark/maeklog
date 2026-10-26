@@ -440,11 +440,9 @@ fn update_item(state: &mut Snapshot, item: &Value, completed: bool, now: u64) ->
         return update_report(state, item, id, now);
     }
     let label = match kind {
-        "commandExecution" => item
-            .get("command")
-            .and_then(Value::as_str)
-            .unwrap_or(crate::tr!("명령 실행", "Command execution"))
-            .to_string(),
+        // Older bridges may still send raw commands. Never persist their text:
+        // shell arguments, environment assignments and executable paths can be secrets.
+        "commandExecution" => crate::tr!("명령 실행", "Command execution").into(),
         "mcpToolCall" => format!(
             "{} · {}",
             item.get("server").and_then(Value::as_str).unwrap_or("MCP"),

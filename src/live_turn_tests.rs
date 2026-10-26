@@ -68,6 +68,42 @@ fn fs_bytes(path: &std::path::Path) -> Vec<u8> {
 }
 
 #[test]
+fn legacy_command_arguments_never_reach_saved_progress_or_summary_evidence() {
+    let store = fixture();
+    for (index, command) in [
+        "TOKEN=SECRET_ENV curl -H 'Authorization: Bearer SECRET_TOKEN'",
+        "sh -c 'login --password SECRET_PASSWORD'",
+        "/private/SECRET_PATH/tool --config=SECRET_CONFIG",
+    ]
+    .iter()
+    .enumerate()
+    {
+        notify(
+            &store,
+            index as u64 + 1,
+            "item/completed",
+            json!({"item":{"type":"commandExecution","id":format!("cmd-{index}"),
+                "command":command,"status":"completed","exitCode":1}}),
+        );
+    }
+    let state = load(&store).unwrap().unwrap();
+    assert_eq!(state.activities.len(), 3);
+    assert!(
+        state.activities.iter().all(
+            |a| a.status == "failed" && a.label == crate::tr!("명령 실행", "Command execution")
+        )
+    );
+    let saved = std::fs::read_to_string(store.path("live-turn.json")).unwrap();
+    assert!(!saved.contains("SECRET"));
+    // Queue through the public API without starting a model worker.
+    let _worker = lock_file(&store.state_root.join("worker.lock"), false).unwrap();
+    crate::live_summary::request(&store).unwrap();
+    let summary = std::fs::read_to_string(store.path("live-summary.json")).unwrap();
+    assert!(!summary.contains("SECRET"));
+    std::fs::remove_dir_all(&store.state_root).unwrap();
+}
+
+#[test]
 fn late_tool_start_and_late_progress_cannot_reopen_completed_work() {
     let store = fixture();
     notify(

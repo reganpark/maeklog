@@ -75,6 +75,8 @@ for(const mode of ['incremental','latest']) {
     put('rebuild.json',{session_id:'excluded-session',requested_at_unix:1});
     unlinkSync(join(gate,'fixture'));
     action('open'); // prefix+m explicitly reactivates; no full historical catch-up.
+    const resizes=()=>jsonLines(join(root,'herdr-calls.jsonl')).filter(args=>args[0]==='pane'&&args[1]==='resize');
+    assert.deepEqual(resizes(),[['pane','resize','--pane','fixture:main','--direction','right','--amount','0.13']]);
     const restartedThrough=count;
     const processed=()=>new Set(get('selected-current.json').done);
     assert.equal(get('participation.json').enabled,true);
@@ -90,6 +92,7 @@ for(const mode of ['incremental','latest']) {
     assert.equal(afterRestart.at(-1).seq.length,Math.min(count,6));
     assert.equal(jsonLines(env.PM_TEST_EVIDENCE).at(-1).previous.objective,'','old brief reached restart prompt');
     action('open'); // Already enabled: opening again does not reseed or consume extra tokens.
+    assert.equal(resizes().length,1,'opening an existing panel must preserve its adjusted width');
     assert.notEqual(run(['action','rebuild']).status,0,'full transcript rebuild bypassed opt-out');
     action('hide'); // Hiding is NOT opt-out.
     assert.equal(get('participation.json').enabled,true);
@@ -125,6 +128,49 @@ for(const mode of ['incremental','latest']) {
     rmSync(gate,{recursive:true,force:true});
     for(const child of coordinators)if(child.exitCode===null&&child.signalCode===null)child.kill('SIGTERM');
     await pause(1000);
+    rmSync(root,{recursive:true,force:true});
+  }
+}
+
+// A created panel must remain registered even if its optional initial resize fails.
+// Exercise the real eight-second Herdr timeout, not a synthetic timeout response.
+for(const failure of ['error','timeout']) {
+  const root=mkdtempSync(join(tmpdir(),'pm-panel-resize-'));
+  const env={...process.env,HERDR_WORKSPACE_ID:'fixture',HERDR_SESSION:'resize-test',
+    MAEKLOG_STATE_DIR:root,MAEKLOG_PLUGIN_ROOT:process.cwd(),MAEKLOG_DISABLE_LUNA:'1',
+    HERDR_PLUGIN_CONFIG_DIR:join(root,'config'),HERDR_BIN_PATH:resolve('scripts/mock-herdr.mjs'),
+    PM_TEST_ROOT:root,PM_TEST_BINARY:binary,PM_TEST_RESIZE:failure};
+  delete env.HERDR_TAB_ID;delete env.HERDR_PANE_ID;delete env.MAEKLOG_INTERNAL;
+  const calls=()=>jsonLines(join(root,'herdr-calls.jsonl'));
+  const opens=()=>calls().filter(args=>args.slice(0,3).join(' ')==='plugin pane open');
+  const resizes=()=>calls().filter(args=>args[0]==='pane'&&args[1]==='resize');
+  const open=()=>spawnSync(binary,['action','open'],{env,encoding:'utf8',timeout:20000});
+  try {
+    const started=Date.now();
+    const first=open();
+    assert.equal(first.error,undefined,`open did not finish after ${failure}: ${first.error}`);
+    assert.equal(first.status,0,first.stderr);
+    assert.match(first.stderr,/initial split could not be resized/);
+    if(failure==='error')assert.match(first.stderr,/fixture resize failed/);
+    if(failure==='timeout') {
+      assert(Date.now()-started>=8000,'resize did not exercise the real timeout');
+      const pid=Number(readFileSync(join(root,'resize-pid'),'utf8'));
+      assert.throws(()=>process.kill(pid,0),{code:'ESRCH'},'timed-out resize process survived');
+    }
+    const spaces=join(root,'spaces');
+    const uiPath=join(spaces,readdirSync(spaces)[0],'ui.json');
+    const ui=JSON.parse(readFileSync(uiPath,'utf8'));
+    assert.equal(ui.panel_pane_id,'fixture:pm');
+    assert.equal(ui.visible,true);
+    const second=open();
+    assert.equal(second.error,undefined);
+    assert.equal(second.status,0,second.stderr);
+    assert.equal(second.stderr,'');
+    assert.deepEqual(JSON.parse(readFileSync(uiPath,'utf8')),ui);
+    assert.equal(opens().length,1,'reopening after resize failure created a duplicate panel');
+    assert.equal(resizes().length,1,'reopening after resize failure retried the resize');
+    console.log(`PASS resize ${failure}: open succeeds, panel registration survives, reopen neither duplicates nor resizes`);
+  } finally {
     rmSync(root,{recursive:true,force:true});
   }
 }
