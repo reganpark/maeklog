@@ -3,3 +3,15 @@ target/
 __pycache__/
 *.py[cod]
 .DS_Store
+
+# Local secrets, caches, and runtime/validation artifacts
+.env
+.env.*
+!.env.example
+*.log
+.cache/
+.maeklog/
+.codex/
+.gemini/
+.claude/
+reducer-failure.json
